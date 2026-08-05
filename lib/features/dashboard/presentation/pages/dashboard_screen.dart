@@ -1,35 +1,71 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:aster/app/theme/aster_spacing.dart';
 import 'package:aster/app/theme/aster_theme.dart';
-import 'package:aster/app/theme/aster_typography.dart';
 import 'package:aster/core/responsive/responsive_layout.dart';
 import 'package:aster/core/widgets/cards/aster_card.dart';
 import 'package:aster/core/widgets/cards/aster_status_card.dart';
 import 'package:aster/core/widgets/buttons/aster_primary_button.dart';
 import 'package:aster/core/widgets/chips/aster_status_chip.dart';
-import 'package:aster/core/widgets/layout/aster_section_header.dart';
+import 'package:aster/core/providers/database_providers.dart';
+import 'package:aster/features/profile/presentation/pages/profile_screen.dart';
+import 'package:aster/features/notifications/presentation/pages/notifications_screen.dart';
 import 'today_schedule_screen.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profileAsync = ref.watch(currentStudentProfileProvider);
+    final activeSubjectsAsync = ref.watch(activeSubjectsProvider);
+
+    final profile = profileAsync.value;
+    final studentName = profile?.name.trim().isNotEmpty == true
+        ? profile!.name.trim()
+        : 'Alex';
+    final initials = studentName
+        .split(' ')
+        .map((e) => e.isEmpty ? '' : e[0])
+        .take(2)
+        .join()
+        .toUpperCase();
+    final dateStr = DateFormat('EEEE, MMMM d').format(DateTime.now());
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Aster'),
         centerTitle: true,
         leading: Padding(
           padding: const EdgeInsets.all(8.0),
-          child: CircleAvatar(
-            backgroundColor: context.colorScheme.primaryContainer,
-            child: const Text('AW', style: TextStyle(fontSize: 12)),
+          child: GestureDetector(
+            onTap: () {
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const ProfileScreen()));
+            },
+            child: CircleAvatar(
+              backgroundColor: context.colorScheme.primaryContainer,
+              child: Text(
+                initials.isEmpty ? 'AW' : initials,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: context.colorScheme.onPrimaryContainer,
+                ),
+              ),
+            ),
           ),
         ),
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_none),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+              );
+            },
           ),
         ],
       ),
@@ -43,13 +79,13 @@ class DashboardScreen extends StatelessWidget {
           children: [
             // Greeting
             Text(
-              'Hello, Alex',
+              'Hello, $studentName',
               style: context.asterTextTheme.displaySmall?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
             Text(
-              'Monday, October 23',
+              dateStr,
               style: context.asterTextTheme.titleLarge?.copyWith(
                 color: context.colorScheme.onSurfaceVariant,
               ),
@@ -58,8 +94,10 @@ class DashboardScreen extends StatelessWidget {
 
             // Bento Grid
             ResponsiveLayout(
-              mobile: (context) => _buildMobileLayout(context),
-              tablet: (context) => _buildTabletLayout(context),
+              mobile: (context) =>
+                  _buildMobileLayout(context, activeSubjectsAsync),
+              tablet: (context) =>
+                  _buildTabletLayout(context, activeSubjectsAsync),
             ),
           ],
         ),
@@ -67,7 +105,10 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMobileLayout(BuildContext context) {
+  Widget _buildMobileLayout(
+    BuildContext context,
+    AsyncValue activeSubjectsAsync,
+  ) {
     return Column(
       children: [
         _buildHeroCard(context),
@@ -87,7 +128,10 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTabletLayout(BuildContext context) {
+  Widget _buildTabletLayout(
+    BuildContext context,
+    AsyncValue activeSubjectsAsync,
+  ) {
     return Column(
       children: [
         Row(
@@ -124,13 +168,6 @@ class DashboardScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(AsterSpacing.spaceMd),
-        image: const DecorationImage(
-          image: NetworkImage(
-            'https://www.transparenttextures.com/patterns/carbon-fibre.png',
-          ),
-          opacity: 0.1,
-          repeat: ImageRepeat.repeat,
-        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -157,14 +194,21 @@ class DashboardScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AsterSpacing.spaceXl),
-          Row(
+          Wrap(
+            spacing: AsterSpacing.spaceSm,
+            runSpacing: AsterSpacing.spaceSm,
             children: [
               ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Attendance planned for today!'),
+                    ),
+                  );
+                },
                 icon: const Icon(Icons.check_circle),
                 label: const Text('Plan to Attend'),
               ),
-              const SizedBox(width: AsterSpacing.spaceMd),
               TextButton(
                 onPressed: () {},
                 child: const Text('Explore Scenario'),

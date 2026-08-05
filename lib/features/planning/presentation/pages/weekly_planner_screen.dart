@@ -1,28 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/aster_spacing.dart';
 import '../../../../app/theme/aster_theme.dart';
 import '../../../../core/responsive/responsive_layout.dart';
 import '../../../../core/widgets/cards/aster_card.dart';
 import '../../../../core/widgets/chips/aster_choice_chip.dart';
 import '../../../../core/widgets/buttons/aster_primary_button.dart';
+import '../../../../core/providers/database_providers.dart';
 import '../../../dashboard/presentation/pages/home_navigation_wrapper.dart';
 
-class WeeklyPlannerScreen extends StatefulWidget {
+class WeeklyPlannerScreen extends ConsumerStatefulWidget {
   final bool isFromOnboarding;
 
   const WeeklyPlannerScreen({super.key, this.isFromOnboarding = false});
 
   @override
-  State<WeeklyPlannerScreen> createState() => _WeeklyPlannerScreenState();
+  ConsumerState<WeeklyPlannerScreen> createState() =>
+      _WeeklyPlannerScreenState();
 }
 
-class _WeeklyPlannerScreenState extends State<WeeklyPlannerScreen> {
+class _WeeklyPlannerScreenState extends ConsumerState<WeeklyPlannerScreen> {
   int _selectedTab = 0;
 
   @override
   Widget build(BuildContext context) {
     final bool showFinishButton =
         widget.isFromOnboarding || Navigator.canPop(context);
+
+    final activeSubjectsAsync = ref.watch(activeSubjectsProvider);
+    final int totalSubjects = activeSubjectsAsync.value?.length ?? 0;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Weekly Planner')),
@@ -79,21 +85,23 @@ class _WeeklyPlannerScreenState extends State<WeeklyPlannerScreen> {
               children: [
                 _buildSummaryCard(
                   context,
-                  title: 'Lectures Missed',
-                  value: '3',
-                  total: '/ 15 Total',
-                  icon: Icons.warning_amber_rounded,
-                  color: context.colorScheme.error,
-                  subtitle: 'Acceptable range for this plan.',
+                  title: 'Curriculum Subjects',
+                  value: '$totalSubjects',
+                  total: 'Active Courses',
+                  icon: Icons.menu_book_rounded,
+                  color: context.colorScheme.primary,
+                  subtitle: totalSubjects > 0
+                      ? 'Live tracking across all $totalSubjects enrolled subjects.'
+                      : 'No active subjects added. Add subjects in Curriculum.',
                 ),
                 const SizedBox(height: 12),
                 _buildSummaryCard(
                   context,
                   title: 'Risk Score',
-                  value: 'Low',
+                  value: totalSubjects > 0 ? 'Low' : 'N/A',
                   icon: Icons.bar_chart_rounded,
                   color: context.colorScheme.primary,
-                  progress: 0.25,
+                  progress: totalSubjects > 0 ? 0.20 : 0.0,
                 ),
                 const SizedBox(height: 12),
                 _buildSummaryCard(
@@ -110,7 +118,7 @@ class _WeeklyPlannerScreenState extends State<WeeklyPlannerScreen> {
                       const SizedBox(height: 4),
                       _buildReasonItem(
                         context,
-                        'Maintains attendance above critical threshold.',
+                        'Maintains attendance above critical policy threshold.',
                       ),
                     ],
                   ),
