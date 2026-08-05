@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../../../../app/theme/aster_spacing.dart';
 import '../../../../app/theme/aster_theme.dart';
-import '../../../../app/theme/aster_typography.dart';
 import '../../../../core/responsive/responsive_layout.dart';
 import '../../../../core/widgets/cards/aster_card.dart';
 import '../../../../core/widgets/cards/aster_status_card.dart';
 import '../../../../core/widgets/chips/aster_status_chip.dart';
+import '../../../../core/providers/database_providers.dart';
 
-class TodayScheduleScreen extends StatelessWidget {
+class TodayScheduleScreen extends ConsumerWidget {
   const TodayScheduleScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeSubjectsAsync = ref.watch(activeSubjectsProvider);
+    final dateStr = DateFormat('EEEE, MMM d').format(DateTime.now());
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Today's Schedule"),
@@ -19,70 +24,99 @@ class TodayScheduleScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        actions: [
-          IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
-        ],
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(
-          horizontal: context.sideMargin,
-          vertical: AsterSpacing.spaceLg,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Thursday, Oct 26', style: context.asterTextTheme.titleLarge),
-            Text(
-              '3 events • 1 conflict detected',
-              style: context.asterTextTheme.bodyMedium?.copyWith(
-                color: context.colorScheme.onSurfaceVariant,
-              ),
+      body: activeSubjectsAsync.when(
+        data: (subjects) {
+          return SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+              horizontal: context.sideMargin,
+              vertical: AsterSpacing.spaceLg,
             ),
-            const SizedBox(height: AsterSpacing.spaceXl),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(dateStr, style: context.asterTextTheme.titleLarge),
+                Text(
+                  subjects.isNotEmpty
+                      ? '${subjects.length} active subject${subjects.length > 1 ? 's' : ''} in curriculum'
+                      : 'No scheduled events',
+                  style: context.asterTextTheme.bodyMedium?.copyWith(
+                    color: context.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: AsterSpacing.spaceXl),
 
-            // Timeline
-            _buildTimelineItem(
-              context,
-              time: '09:00',
-              icon: Icons.menu_book,
-              child: _buildLectureCard(
-                context,
-                title: 'Advanced Thermodynamics',
-                subtitle: 'Prof. Henderson • Room 302, Engineering Bldg',
-                timeRange: '09:00 - 10:30',
-                status: 'Present',
-              ),
+                if (subjects.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color: context.colorScheme.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: context.colorScheme.outlineVariant,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.event_busy_outlined,
+                          size: 48,
+                          color: context.colorScheme.outlineVariant,
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No lectures scheduled for today.',
+                          style: context.asterTextTheme.titleMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Add your subjects in Curriculum to manage your timetable.',
+                          style: context.asterTextTheme.bodySmall?.copyWith(
+                            color: context.colorScheme.onSurfaceVariant,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: subjects.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: AsterSpacing.spaceLg),
+                    itemBuilder: (context, index) {
+                      final subject = subjects[index];
+                      final timeStr = '09:${index * 45} AM';
+                      return _buildTimelineItem(
+                        context,
+                        time: timeStr,
+                        icon: subject.subjectType == 'Practical'
+                            ? Icons.storage
+                            : Icons.menu_book,
+                        child: _buildLectureCard(
+                          context,
+                          title: subject.name,
+                          subtitle:
+                              '${subject.code ?? subject.subjectType} • Active Course',
+                          timeRange: '$timeStr - ${index + 10}:00 AM',
+                          status: subject.isMandatory
+                              ? 'Mandatory'
+                              : 'Optional',
+                        ),
+                      );
+                    },
+                  ),
+              ],
             ),
-
-            _buildTransitItem(context, duration: '45 min transit'),
-
-            _buildTimelineItem(
-              context,
-              time: '11:15',
-              icon: Icons.work,
-              isConflict: true,
-              child: _buildConflictCard(
-                context,
-                title: 'Data Analysis Internship',
-                subtitle: 'TechCorp Inc. • Main Office',
-                conflictMessage:
-                    'Transit time overlaps with shift start (11:00 AM).',
-              ),
-            ),
-
-            _buildTimelineItem(
-              context,
-              time: '15:00',
-              icon: Icons.groups,
-              child: _buildPendingCard(
-                context,
-                title: 'Thermo Study Group',
-                subtitle: 'Library, 2nd Floor',
-                timeRange: '15:00 - 17:00',
-              ),
-            ),
-          ],
-        ),
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) =>
+            Center(child: Text('Error loading schedule: $err')),
       ),
     );
   }

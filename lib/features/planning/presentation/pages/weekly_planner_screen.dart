@@ -128,53 +128,64 @@ class _WeeklyPlannerScreenState extends ConsumerState<WeeklyPlannerScreen> {
             const SizedBox(height: AsterSpacing.spaceXl),
 
             // Weekly Schedule
-            Text('Weekly Schedule', style: context.asterTextTheme.titleLarge),
+            Text(
+              'Weekly Schedule Overview',
+              style: context.asterTextTheme.titleLarge,
+            ),
             const SizedBox(height: AsterSpacing.spaceMd),
-            _buildDayPlan(
-              context,
-              day: 'Monday',
-              date: 'Oct 23',
-              items: [
-                _buildPlanItem(
-                  context,
-                  'Advanced Physics',
-                  '9:00 AM - 11:00 AM',
-                  Icons.menu_book,
-                  context.colorScheme.primary,
+            if (totalSubjects == 0)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: context.colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: context.colorScheme.outlineVariant),
                 ),
-                _buildPlanItem(
-                  context,
-                  'Internship',
-                  '1:00 PM - 5:00 PM',
-                  Icons.work,
-                  context.colorScheme.secondary,
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.calendar_today_outlined,
+                      size: 40,
+                      color: context.colorScheme.outlineVariant,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'No subjects added to planner yet.',
+                      style: context.asterTextTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Add subjects during setup to view your weekly breakdown.',
+                      style: context.asterTextTheme.bodySmall?.copyWith(
+                        color: context.colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            const SizedBox(height: AsterSpacing.spaceSm),
-            _buildDayPlan(
-              context,
-              day: 'Tuesday',
-              date: 'Oct 24',
-              isDimmed: true,
-              items: [
-                _buildPlanItem(
-                  context,
-                  'Data Structures',
-                  '10:00 AM - 12:00 PM',
-                  Icons.menu_book,
-                  context.colorScheme.primary,
-                ),
-                _buildPlanItem(
-                  context,
-                  'Calculus II (Planned Skip)',
-                  '2:00 PM - 4:00 PM',
-                  Icons.cancel,
-                  context.colorScheme.error,
-                  isSkip: true,
-                ),
-              ],
-            ),
+              )
+            else
+              Column(
+                children: [
+                  _buildDayPlan(
+                    context,
+                    day: 'Monday',
+                    date: 'Week Start',
+                    items: (activeSubjectsAsync.value ?? []).map((subject) {
+                      return _buildPlanItem(
+                        context,
+                        subject.name,
+                        '${subject.code ?? subject.subjectType} • Scheduled',
+                        subject.subjectType == 'Practical'
+                            ? Icons.storage
+                            : Icons.menu_book,
+                        context.colorScheme.primary,
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
