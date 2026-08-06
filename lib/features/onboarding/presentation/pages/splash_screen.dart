@@ -1,24 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/aster_theme.dart';
+import '../../../../core/providers/database_providers.dart';
+import '../../../dashboard/presentation/pages/home_navigation_wrapper.dart';
 import 'welcome_screen.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _navigateToWelcome();
+    _checkInitialRoute();
   }
 
-  void _navigateToWelcome() async {
+  void _checkInitialRoute() async {
     await Future.delayed(const Duration(seconds: 2));
-    if (mounted) {
+    if (!mounted) return;
+  
+    final db = ref.read(databaseProvider);
+    final profile = await db.studentProfileDao.getProfile();
+
+    if (!mounted) return;
+
+    if (profile != null) {
+      // Data exists: Skip onboarding permanently and jump straight to Dashboard
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const HomeNavigationWrapper()),
+      );
+    } else {
+      // First time user: Show WelcomeScreen
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const WelcomeScreen()),
       );

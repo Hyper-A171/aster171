@@ -4,6 +4,7 @@ import '../../../../app/theme/aster_theme.dart';
 import '../../../../core/responsive/responsive_layout.dart';
 import '../../../../core/widgets/buttons/aster_primary_button.dart';
 import '../../../../core/widgets/buttons/aster_secondary_button.dart';
+import '../../../dashboard/presentation/pages/home_navigation_wrapper.dart';
 import 'student_setup_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
@@ -84,7 +85,12 @@ class WelcomeScreen extends StatelessWidget {
                   AsterSecondaryButton(
                     label: 'I already have data',
                     onPressed: () {
-                      // Navigate to dashboard/login
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(
+                          builder: (_) => const HomeNavigationWrapper(),
+                        ),
+                        (route) => false,
+                      );
                     },
                     fullWidth: true,
                   ),

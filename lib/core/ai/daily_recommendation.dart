@@ -1,9 +1,4 @@
-enum DailyDecision {
-  attendCollege,
-  attendInternship,
-  splitDay,
-  needsReview,
-}
+enum DailyDecision { attendCollege, attendInternship, splitDay, needsReview }
 
 enum RecommendationRisk { low, medium, high, critical }
 
@@ -20,9 +15,9 @@ class ProtectedEvent {
 
   factory ProtectedEvent.fromJson(Map<String, dynamic> json) {
     return ProtectedEvent(
-      eventId: _requiredString(json, 'event_id'),
-      eventType: _requiredString(json, 'event_type'),
-      action: _requiredString(json, 'action'),
+      eventId: DailyRecommendation._requiredString(json, 'event_id'),
+      eventType: DailyRecommendation._requiredString(json, 'event_type'),
+      action: DailyRecommendation._requiredString(json, 'action'),
     );
   }
 }
@@ -56,9 +51,10 @@ class DailyRecommendation {
 
     final decision = _parseDecision(_requiredString(json, 'decision'));
     final riskLevel = _parseRisk(_requiredString(json, 'risk_level'));
-    final protectedEvents = _requiredList(json, 'protected_events')
-        .map((item) => ProtectedEvent.fromJson(item))
-        .toList(growable: false);
+    final protectedEvents = _requiredList(
+      json,
+      'protected_events',
+    ).map((item) => ProtectedEvent.fromJson(item)).toList(growable: false);
 
     return DailyRecommendation(
       decision: decision,

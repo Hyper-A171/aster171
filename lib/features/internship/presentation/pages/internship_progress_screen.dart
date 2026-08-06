@@ -72,7 +72,7 @@ class InternshipProgressScreen extends ConsumerWidget {
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    'days / week',
+                                    'days/week',
                                     style: context.asterTextTheme.titleMedium,
                                   ),
                                 ],
@@ -112,16 +112,26 @@ class InternshipProgressScreen extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(6),
-                        child: LinearProgressIndicator(
-                          value: 1.0,
-                          minHeight: 10,
-                          color: context.colorScheme.secondary,
-                          backgroundColor:
-                              context.colorScheme.surfaceContainerHighest,
-                        ),
+                      const SizedBox(height: AsterSpacing.spaceSm),
+                      Row(
+                        children: [
+                          Icon(
+                            requirement != null
+                                ? Icons.check_circle_outline
+                                : Icons.info_outline,
+                            size: 16,
+                            color: context.colorScheme.primary,
+                          ),
+                          const SizedBox(width: AsterSpacing.spaceXs),
+                          Expanded(
+                            child: Text(
+                              requirement != null
+                                  ? 'Your weekly schedule is configured'
+                                  : 'Configure a schedule to replace the default',
+                              style: context.asterTextTheme.bodySmall,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -148,7 +158,9 @@ class InternshipProgressScreen extends ConsumerWidget {
                 // Activity List
                 Text(
                   'Internship Requirements Overview',
-                  style: context.asterTextTheme.titleLarge,
+                  style: MediaQuery.sizeOf(context).width < 360
+                      ? context.asterTextTheme.titleMedium
+                      : context.asterTextTheme.titleLarge,
                 ),
                 const SizedBox(height: AsterSpacing.spaceMd),
                 _buildActivityItem(
@@ -166,7 +178,7 @@ class InternshipProgressScreen extends ConsumerWidget {
                       requirement != null &&
                           requirement.startMinutes != null &&
                           requirement.endMinutes != null
-                      ? '${requirement.startMinutes! ~/ 60}:00 - ${requirement.endMinutes! ~/ 60}:00'
+                      ? '${_formatMinutes(requirement.startMinutes!)} - ${_formatMinutes(requirement.endMinutes!)}'
                       : '9:00 AM - 5:00 PM',
                   status: 'Scheduled',
                 ),
@@ -176,6 +188,15 @@ class InternshipProgressScreen extends ConsumerWidget {
         },
       ),
     );
+  }
+
+  String _formatMinutes(int minutes) {
+    final normalizedMinutes = minutes % (24 * 60);
+    final hour = normalizedMinutes ~/ 60;
+    final minute = normalizedMinutes % 60;
+    final period = hour < 12 ? 'AM' : 'PM';
+    final displayHour = hour % 12 == 0 ? 12 : hour % 12;
+    return '$displayHour:${minute.toString().padLeft(2, '0')} $period';
   }
 
   Widget _buildActivityItem(
@@ -209,15 +230,16 @@ class InternshipProgressScreen extends ConsumerWidget {
             ),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: context.colorScheme.primaryFixed,
-              borderRadius: BorderRadius.circular(4),
+              color: context.colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
               status,
               style: context.asterTextTheme.labelSmall?.copyWith(
-                color: context.colorScheme.primary,
+                color: context.colorScheme.onPrimaryContainer,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),

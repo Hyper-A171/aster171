@@ -52,7 +52,10 @@ Return only JSON matching the supplied response schema.
         'enum': ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
       },
       'summary': {'type': 'STRING'},
-      'reasons': {'type': 'ARRAY', 'items': {'type': 'STRING'}},
+      'reasons': {
+        'type': 'ARRAY',
+        'items': {'type': 'STRING'},
+      },
       'protected_events': {
         'type': 'ARRAY',
         'items': {
@@ -65,8 +68,14 @@ Return only JSON matching the supplied response schema.
           'required': ['event_id', 'event_type', 'action'],
         },
       },
-      'suggested_actions': {'type': 'ARRAY', 'items': {'type': 'STRING'}},
-      'data_warnings': {'type': 'ARRAY', 'items': {'type': 'STRING'}},
+      'suggested_actions': {
+        'type': 'ARRAY',
+        'items': {'type': 'STRING'},
+      },
+      'data_warnings': {
+        'type': 'ARRAY',
+        'items': {'type': 'STRING'},
+      },
     },
     'required': [
       'decision',
@@ -90,31 +99,33 @@ Return only JSON matching the supplied response schema.
     final uri = Uri.parse(
       'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent',
     );
-    final request = await _httpClient.postUrl(uri).timeout(
-      const Duration(seconds: 15),
-    );
+    final request = await _httpClient
+        .postUrl(uri)
+        .timeout(const Duration(seconds: 15));
     request.headers.contentType = ContentType.json;
     request.headers.set('X-goog-api-key', apiKey);
-    request.write(jsonEncode({
-      'systemInstruction': {
-        'parts': [
-          {'text': _systemPrompt},
-        ],
-      },
-      'contents': [
-        {
-          'role': 'user',
+    request.write(
+      jsonEncode({
+        'systemInstruction': {
           'parts': [
-            {'text': jsonEncode(snapshot)},
+            {'text': _systemPrompt},
           ],
         },
-      ],
-      'generationConfig': {
-        'responseMimeType': 'application/json',
-        'responseSchema': responseSchema,
-        'temperature': 0.1,
-      },
-    }));
+        'contents': [
+          {
+            'role': 'user',
+            'parts': [
+              {'text': jsonEncode(snapshot)},
+            ],
+          },
+        ],
+        'generationConfig': {
+          'responseMimeType': 'application/json',
+          'responseSchema': responseSchema,
+          'temperature': 0.1,
+        },
+      }),
+    );
 
     final response = await request.close().timeout(const Duration(seconds: 20));
     final body = await utf8.decoder.bind(response).join();
@@ -124,8 +135,10 @@ Return only JSON matching the supplied response schema.
 
     try {
       final decoded = jsonDecode(body) as Map<String, dynamic>;
-      final text = (((decoded['candidates'] as List).first as Map)
-          ['content'] as Map)['parts'] as List;
+      final text =
+          (((decoded['candidates'] as List).first as Map)['content']
+                  as Map)['parts']
+              as List;
       final jsonText = (text.first as Map)['text'] as String;
       return DailyRecommendation.fromJson(
         jsonDecode(jsonText) as Map<String, dynamic>,

@@ -182,7 +182,9 @@ abstract class AsterComponentThemes {
 
   static NavigationBarThemeData navigationBarTheme(ColorScheme colorScheme) {
     return NavigationBarThemeData(
-      height: 64.0,
+      // Material navigation destinations need enough room for both the icon and
+      // label. A shorter bar clips labels on compact Android devices.
+      height: 72.0,
       backgroundColor: colorScheme.surface,
       elevation: 0.0,
       indicatorColor: colorScheme.primaryContainer,

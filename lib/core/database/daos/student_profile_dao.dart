@@ -12,6 +12,10 @@ class StudentProfileDao extends DatabaseAccessor<AsterDatabase>
     return (select(studentProfiles)..limit(1)).watchSingleOrNull();
   }
 
+  Future<StudentProfile?> getProfile() {
+    return (select(studentProfiles)..limit(1)).getSingleOrNull();
+  }
+
   Future<int> upsertProfile(StudentProfilesCompanion profile) {
     return into(studentProfiles).insertOnConflictUpdate(profile);
   }

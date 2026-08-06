@@ -22,16 +22,28 @@ class WeeklyPlannerScreen extends ConsumerStatefulWidget {
 class _WeeklyPlannerScreenState extends ConsumerState<WeeklyPlannerScreen> {
   int _selectedTab = 0;
 
+  final List<String> _weekDays = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+  ];
+
   @override
   Widget build(BuildContext context) {
     final bool showFinishButton =
         widget.isFromOnboarding || Navigator.canPop(context);
 
     final activeSubjectsAsync = ref.watch(activeSubjectsProvider);
-    final int totalSubjects = activeSubjectsAsync.value?.length ?? 0;
+    final subjects = activeSubjectsAsync.value ?? [];
+    final int totalSubjects = subjects.length;
+
+    final internshipReqAsync = ref.watch(internshipRequirementsProvider);
+    final internshipReq = internshipReqAsync.value;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Weekly Planner')),
+      appBar: AppBar(title: const Text('Weekly Planner & Strategy')),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(
           horizontal: context.sideMargin,
@@ -57,86 +69,148 @@ class _WeeklyPlannerScreenState extends ConsumerState<WeeklyPlannerScreen> {
               ),
               const SizedBox(height: AsterSpacing.spaceLg),
             ],
-            Text(
-              'Optimize your schedule for the upcoming week.',
-              style: context.asterTextTheme.bodyLarge?.copyWith(
-                color: context.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: AsterSpacing.spaceLg),
 
-            // Plan Tabs
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
+            // Strategy Header Banner
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: context.colorScheme.primaryContainer.withValues(
+                  alpha: 0.7,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: context.colorScheme.primary.withValues(alpha: 0.3),
+                ),
+              ),
               child: Row(
                 children: [
-                  _buildTab(0, 'Recommended', icon: Icons.check),
-                  const SizedBox(width: 8),
-                  _buildTab(1, 'Attendance First'),
-                  const SizedBox(width: 8),
-                  _buildTab(2, 'Internship First'),
+                  CircleAvatar(
+                    backgroundColor: context.colorScheme.primary,
+                    child: const Icon(
+                      Icons.auto_awesome,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _getPlanTitle(_selectedTab),
+                          style: context.asterTextTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: context.colorScheme.onPrimaryContainer,
+                          ),
+                        ),
+                        Text(
+                          _getPlanSubtitle(_selectedTab),
+                          style: context.asterTextTheme.bodySmall?.copyWith(
+                            color: context.colorScheme.onPrimaryContainer
+                                .withValues(alpha: 0.8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
             const SizedBox(height: AsterSpacing.spaceLg),
 
-            // Summary Cards
-            Column(
+            // Strategy Filter Chips
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildTab(0, 'Recommended', icon: Icons.star_rounded),
+                  const SizedBox(width: 8),
+                  _buildTab(1, 'Attendance First', icon: Icons.shield_outlined),
+                  const SizedBox(width: 8),
+                  _buildTab(2, 'Internship Focus', icon: Icons.work_outline),
+                ],
+              ),
+            ),
+            const SizedBox(height: AsterSpacing.spaceLg),
+
+            // Metrics Grid
+            Row(
               children: [
-                _buildSummaryCard(
-                  context,
-                  title: 'Curriculum Subjects',
-                  value: '$totalSubjects',
-                  total: 'Active Courses',
-                  icon: Icons.menu_book_rounded,
-                  color: context.colorScheme.primary,
-                  subtitle: totalSubjects > 0
-                      ? 'Live tracking across all $totalSubjects enrolled subjects.'
-                      : 'No active subjects added. Add subjects in Curriculum.',
+                Expanded(
+                  child: _buildMetricCard(
+                    context,
+                    title: 'Active Courses',
+                    value: '$totalSubjects',
+                    icon: Icons.menu_book_rounded,
+                    color: context.colorScheme.primary,
+                  ),
                 ),
-                const SizedBox(height: 12),
-                _buildSummaryCard(
-                  context,
-                  title: 'Risk Score',
-                  value: totalSubjects > 0 ? 'Low' : 'N/A',
-                  icon: Icons.bar_chart_rounded,
-                  color: context.colorScheme.primary,
-                  progress: totalSubjects > 0 ? 0.20 : 0.0,
-                ),
-                const SizedBox(height: 12),
-                _buildSummaryCard(
-                  context,
-                  title: 'Why this plan?',
-                  icon: Icons.lightbulb_outline_rounded,
-                  color: context.colorScheme.secondary,
-                  content: Column(
-                    children: [
-                      _buildReasonItem(
-                        context,
-                        'Balances study and internship hours optimally.',
-                      ),
-                      const SizedBox(height: 4),
-                      _buildReasonItem(
-                        context,
-                        'Maintains attendance above critical policy threshold.',
-                      ),
-                    ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _buildMetricCard(
+                    context,
+                    title: 'Risk Profile',
+                    value: totalSubjects > 0 ? 'Safe' : 'Setup',
+                    icon: Icons.verified_user_outlined,
+                    color: Colors.green,
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: AsterSpacing.spaceLg),
+
+            // Plan Rationale Card
+            AsterCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.lightbulb_outline_rounded,
+                        color: context.colorScheme.tertiary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'PLAN RATIONALE',
+                        style: context.asterTextTheme.labelMedium?.copyWith(
+                          color: context.colorScheme.tertiary,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  _buildReasonItem(
+                    context,
+                    'Optimizes weekly schedule based on active enrolled curriculum.',
+                  ),
+                  const SizedBox(height: 6),
+                  _buildReasonItem(
+                    context,
+                    'Guarantees attendance remains above the 75% required policy limit.',
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: AsterSpacing.spaceXl),
 
-            // Weekly Schedule
+            // Weekly Schedule Section
             Text(
-              'Weekly Schedule Overview',
-              style: context.asterTextTheme.titleLarge,
+              'Weekly Timetable & Action Plan',
+              style: context.asterTextTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: AsterSpacing.spaceMd),
+
             if (totalSubjects == 0)
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(28),
                 decoration: BoxDecoration(
                   color: context.colorScheme.surfaceContainerLow,
                   borderRadius: BorderRadius.circular(16),
@@ -146,17 +220,19 @@ class _WeeklyPlannerScreenState extends ConsumerState<WeeklyPlannerScreen> {
                   children: [
                     Icon(
                       Icons.calendar_today_outlined,
-                      size: 40,
+                      size: 48,
                       color: context.colorScheme.outlineVariant,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Text(
-                      'No subjects added to planner yet.',
-                      style: context.asterTextTheme.titleSmall,
+                      'No subjects added to planner yet',
+                      style: context.asterTextTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Add subjects during setup to view your weekly breakdown.',
+                      'Add your subjects in Curriculum to generate your dynamic weekly schedule.',
                       style: context.asterTextTheme.bodySmall?.copyWith(
                         color: context.colorScheme.onSurfaceVariant,
                       ),
@@ -166,25 +242,26 @@ class _WeeklyPlannerScreenState extends ConsumerState<WeeklyPlannerScreen> {
                 ),
               )
             else
-              Column(
-                children: [
-                  _buildDayPlan(
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _weekDays.length,
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: AsterSpacing.spaceMd),
+                itemBuilder: (context, index) {
+                  final dayName = _weekDays[index];
+                  // Check if this weekday is an internship day
+                  final bool isInternshipDay = internshipReq != null && 
+                      (index + 1) == 2; // Demo logic: Tuesday is internship day
+                  
+                  return _buildDayScheduleCard(
                     context,
-                    day: 'Monday',
-                    date: 'Week Start',
-                    items: (activeSubjectsAsync.value ?? []).map((subject) {
-                      return _buildPlanItem(
-                        context,
-                        subject.name,
-                        '${subject.code ?? subject.subjectType} • Scheduled',
-                        subject.subjectType == 'Practical'
-                            ? Icons.storage
-                            : Icons.menu_book,
-                        context.colorScheme.primary,
-                      );
-                    }).toList(),
-                  ),
-                ],
+                    dayName: dayName,
+                    dynamicSubjects: subjects,
+                    dayIndex: index,
+                    isInternshipDay: isInternshipDay,
+                  );
+                },
               ),
           ],
         ),
@@ -217,6 +294,20 @@ class _WeeklyPlannerScreenState extends ConsumerState<WeeklyPlannerScreen> {
     );
   }
 
+  String _getPlanTitle(int tab) => switch (tab) {
+    0 => 'Recommended Balanced Strategy',
+    1 => 'Attendance Protection First',
+    2 => 'Internship Priority Strategy',
+    _ => 'Weekly Strategy',
+  };
+
+  String _getPlanSubtitle(int tab) => switch (tab) {
+    0 => 'Balanced distribution between college lectures and internship hours.',
+    1 => 'Prioritizes college attendance for subjects near threshold limits.',
+    2 => 'Clears contiguous field work blocks for your internship commitments.',
+    _ => 'Optimized schedule plan.',
+  };
+
   Widget _buildTab(int index, String label, {IconData? icon}) {
     return AsterChoiceChip(
       label: label,
@@ -226,83 +317,41 @@ class _WeeklyPlannerScreenState extends ConsumerState<WeeklyPlannerScreen> {
     );
   }
 
-  Widget _buildSummaryCard(
+  Widget _buildMetricCard(
     BuildContext context, {
     required String title,
-    String? value,
-    String? total,
+    required String value,
     required IconData icon,
     required Color color,
-    String? subtitle,
-    double? progress,
-    Widget? content,
   }) {
     return AsterCard(
-      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Icon(icon, size: 18, color: color),
-              const SizedBox(width: 8),
-              Text(
-                title.toUpperCase(),
-                style: context.asterTextTheme.labelMedium?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.5,
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  title.toUpperCase(),
+                  style: context.asterTextTheme.labelSmall?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          if (value != null) ...[
-            const SizedBox(height: 32),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                Text(
-                  value,
-                  style: context.asterTextTheme.displayLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: context.colorScheme.onSurface,
-                  ),
-                ),
-                if (total != null) ...[
-                  const SizedBox(width: 6),
-                  Text(
-                    total,
-                    style: context.asterTextTheme.bodyLarge?.copyWith(
-                      color: context.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ],
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: context.asterTextTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+              color: context.colorScheme.onSurface,
             ),
-          ],
-          if (subtitle != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: context.asterTextTheme.bodySmall?.copyWith(
-                color: context.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-          if (progress != null) ...[
-            const SizedBox(height: 24),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(99),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 6,
-                color: color,
-                backgroundColor: context.colorScheme.surfaceContainerHighest,
-              ),
-            ),
-          ],
-          if (content != null) ...[const SizedBox(height: 16), content],
+          ),
         ],
       ),
     );
@@ -313,9 +362,9 @@ class _WeeklyPlannerScreenState extends ConsumerState<WeeklyPlannerScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(
-          Icons.check_circle_outline_rounded,
+          Icons.check_circle_rounded,
           size: 16,
-          color: context.colorScheme.secondary,
+          color: context.colorScheme.primary,
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -330,74 +379,108 @@ class _WeeklyPlannerScreenState extends ConsumerState<WeeklyPlannerScreen> {
     );
   }
 
-  Widget _buildDayPlan(
+  Widget _buildDayScheduleCard(
     BuildContext context, {
-    required String day,
-    required String date,
-    required List<Widget> items,
-    bool isDimmed = false,
+    required String dayName,
+    required List dynamicSubjects,
+    required int dayIndex,
+    required bool isInternshipDay,
   }) {
-    return Opacity(
-      opacity: isDimmed ? 0.6 : 1.0,
-      child: AsterCard(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: 80,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(day, style: context.asterTextTheme.titleSmall),
-                  Text(date, style: context.asterTextTheme.labelSmall),
-                ],
-              ),
-            ),
-            const VerticalDivider(),
-            Expanded(child: Column(children: items)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPlanItem(
-    BuildContext context,
-    String title,
-    String time,
-    IconData icon,
-    Color color, {
-    bool isSkip = false,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: color.withValues(alpha: 0.3),
-          style: isSkip ? BorderStyle.none : BorderStyle.solid,
-        ),
-      ),
-      child: Row(
+    return AsterCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                dayName,
+                style: context.asterTextTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: isInternshipDay
+                      ? context.colorScheme.secondaryContainer
+                      : context.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  isInternshipDay ? 'Internship Focus' : 'Campus Day',
                   style: context.asterTextTheme.labelSmall?.copyWith(
+                    color: isInternshipDay
+                        ? context.colorScheme.onSecondaryContainer
+                        : context.colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.bold,
-                    decoration: isSkip ? TextDecoration.lineThrough : null,
                   ),
                 ),
-                Text(time, style: const TextStyle(fontSize: 10)),
-              ],
-            ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Column(
+            children: dynamicSubjects.take(2).map((sub) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: context.colorScheme.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: context.colorScheme.outlineVariant),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      sub.subjectType == 'Practical'
+                          ? Icons.storage
+                          : Icons.menu_book,
+                      size: 18,
+                      color: context.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            sub.name,
+                            style: context.asterTextTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            '${sub.code ?? sub.subjectType} • 09:00 AM',
+                            style: context.asterTextTheme.bodySmall?.copyWith(
+                              color: context.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'ATTEND',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
           ),
         ],
       ),

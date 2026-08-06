@@ -9,8 +9,11 @@ import 'package:aster/core/widgets/cards/aster_status_card.dart';
 import 'package:aster/core/widgets/buttons/aster_primary_button.dart';
 import 'package:aster/core/widgets/chips/aster_status_chip.dart';
 import 'package:aster/core/providers/database_providers.dart';
+import 'package:aster/core/ai/ai_providers.dart';
+import 'package:aster/core/ai/daily_recommendation.dart';
 import 'package:aster/features/profile/presentation/pages/profile_screen.dart';
 import 'package:aster/features/notifications/presentation/pages/notifications_screen.dart';
+import 'package:aster/features/subjects/presentation/pages/add_subjects_screen.dart';
 import 'today_schedule_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -111,12 +114,15 @@ class DashboardScreen extends ConsumerWidget {
         const SizedBox(height: AsterSpacing.spaceLg),
         _buildLecturesCard(context, ref),
         const SizedBox(height: AsterSpacing.spaceLg),
-        Row(
-          children: [
-            Expanded(child: _buildInternshipCard(context, ref)),
-            const SizedBox(width: AsterSpacing.spaceMd),
-            Expanded(child: _buildCriticalSubjectCard(context, ref)),
-          ],
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: _buildInternshipCard(context, ref)),
+              const SizedBox(width: AsterSpacing.spaceMd),
+              Expanded(child: _buildCriticalSubjectCard(context, ref)),
+            ],
+          ),
         ),
       ],
     );
@@ -156,15 +162,31 @@ class DashboardScreen extends ConsumerWidget {
     final activeSubjectsAsync = ref.watch(activeSubjectsProvider);
     final subjects = activeSubjectsAsync.value ?? [];
 
+    final aiRecAsync = ref.watch(dailyAiRecommendationProvider);
+    final aiRec = aiRecAsync.value;
+
     String headlineText = 'Attend College Today';
     String descriptionText =
         'Keep up your attendance momentum across all active subjects.';
     AsterStatus cardStatus = AsterStatus.safe;
+    String badgeLabel = 'Live Schedule Match';
 
-    if (subjects.isEmpty) {
+    if (aiRec != null) {
+      headlineText = aiRec.decision == DailyDecision.attendCollege
+          ? 'Attend College Today'
+          : aiRec.decision == DailyDecision.attendInternship
+          ? 'Safe to Attend Internship'
+          : 'Flexible Schedule Today';
+      descriptionText = aiRec.summary;
+      badgeLabel = 'Gemini AI • ${(aiRec.confidence * 100).toInt()}% Match';
+      cardStatus = aiRec.riskLevel == RecommendationRisk.low
+          ? AsterStatus.safe
+          : AsterStatus.watch;
+    } else if (subjects.isEmpty) {
       headlineText = 'Welcome to Aster';
       descriptionText =
           'Add your subjects in Curriculum to track live attendance and safety scores.';
+      badgeLabel = 'Setup Mode';
     } else {
       headlineText = 'Curriculum Tracking Active';
       descriptionText =
@@ -183,8 +205,8 @@ class DashboardScreen extends ConsumerWidget {
         children: [
           AsterStatusChip(
             status: cardStatus,
-            label: subjects.isNotEmpty ? 'Live Schedule Match' : 'Setup Mode',
-            icon: Icons.verified,
+            label: badgeLabel,
+            icon: Icons.auto_awesome,
           ),
           const SizedBox(height: AsterSpacing.spaceMd),
           Text(
@@ -209,12 +231,22 @@ class DashboardScreen extends ConsumerWidget {
             children: [
               ElevatedButton.icon(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Attendance log updated!')),
-                  );
+                  if (subjects.isEmpty) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const AddSubjectsScreen(),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Attendance log updated!')),
+                    );
+                  }
                 },
-                icon: const Icon(Icons.check_circle),
-                label: const Text('Mark Today\'s Log'),
+                icon: Icon(subjects.isEmpty ? Icons.add : Icons.check_circle),
+                label: Text(
+                  subjects.isEmpty ? 'Add Subjects' : 'Mark Today\'s Log',
+                ),
               ),
             ],
           ),
@@ -489,10 +521,10 @@ class DashboardScreen extends ConsumerWidget {
     if (subjects.isEmpty) {
       return AsterStatusCard(
         status: AsterStatus.safe,
-        title: '0',
-        description: 'No Subjects Added',
+        title: 'Safe',
+        description: 'Curriculum Status',
         content: Text(
-          'Curriculum Status',
+          'No active subjects added',
           style: context.asterTextTheme.labelSmall,
         ),
       );
