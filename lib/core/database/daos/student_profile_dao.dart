@@ -16,7 +16,15 @@ class StudentProfileDao extends DatabaseAccessor<AsterDatabase>
     return (select(studentProfiles)..limit(1)).getSingleOrNull();
   }
 
-  Future<int> upsertProfile(StudentProfilesCompanion profile) {
-    return into(studentProfiles).insertOnConflictUpdate(profile);
+  Future<int> upsertProfile(StudentProfilesCompanion profile) async {
+    final existing = await getProfile();
+    if (existing == null) {
+      return into(studentProfiles).insert(profile);
+    }
+
+    await (update(
+      studentProfiles,
+    )..where((table) => table.id.equals(existing.id))).write(profile);
+    return existing.id;
   }
 }

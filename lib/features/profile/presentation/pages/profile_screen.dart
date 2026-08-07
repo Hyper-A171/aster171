@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
-import 'package:intl/intl.dart';
 import 'package:aster/app/theme/aster_spacing.dart';
 import 'package:aster/app/theme/aster_theme.dart';
 import 'package:aster/core/responsive/responsive_layout.dart';
@@ -23,7 +22,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final _nameController = TextEditingController();
   final _collegeController = TextEditingController();
   final _courseController = TextEditingController();
-  String _selectedSemester = 'Semester 4';
+  String _selectedSemester = 'Semester 5';
   DateTime? _startDate;
   DateTime? _endDate;
   bool _isLoaded = false;
@@ -36,15 +35,37 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     'Semester 4',
     'Semester 5',
     'Semester 6',
-    'Semester 7',
-    'Semester 8',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController.addListener(_refreshHeader);
+    _courseController.addListener(_refreshHeader);
+  }
+
+  void _refreshHeader() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _nameController
+      ..removeListener(_refreshHeader)
+      ..dispose();
+    _collegeController.dispose();
+    _courseController
+      ..removeListener(_refreshHeader)
+      ..dispose();
+    super.dispose();
+  }
 
   void _populateData(StudentProfile? profile) {
     if (_isLoaded || profile == null) return;
     _nameController.text = profile.name;
     _collegeController.text = profile.collegeName ?? '';
-    _courseController.text = profile.course ?? '';
+    _courseController.text =
+        profile.course ?? 'Diploma in Computer Engineering';
     if (profile.semesterName != null &&
         _semesters.contains(profile.semesterName)) {
       _selectedSemester = profile.semesterName!;
@@ -59,6 +80,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Please enter your name')));
+      return;
+    }
+    if (_startDate != null &&
+        _endDate != null &&
+        _endDate!.isBefore(_startDate!)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Semester end must follow its start.')),
+      );
       return;
     }
 
@@ -160,6 +189,24 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           color: context.colorScheme.onSurfaceVariant,
                         ),
                       ),
+                    const SizedBox(height: AsterSpacing.spaceXs),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AsterSpacing.spaceSm,
+                        vertical: AsterSpacing.spaceXs,
+                      ),
+                      decoration: BoxDecoration(
+                        color: context.colorScheme.secondaryContainer,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        '3-year diploma • $_selectedSemester',
+                        style: context.asterTextTheme.labelSmall?.copyWith(
+                          color: context.colorScheme.onSecondaryContainer,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -187,7 +234,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               const SizedBox(height: AsterSpacing.spaceMd),
               AsterTextField(
                 label: 'Course / Major',
-                hintText: 'e.g. B.Tech Computer Science',
+                hintText: 'Diploma in Computer Engineering',
                 controller: _courseController,
                 prefixIcon: const Icon(Icons.book_outlined),
               ),

@@ -30,7 +30,25 @@ class InternshipDao extends DatabaseAccessor<AsterDatabase>
     return select(internshipSessions).watch();
   }
 
-  Future<int> upsertRequirements(InternshipRequirementsCompanion requirements) {
-    return into(internshipRequirements).insertOnConflictUpdate(requirements);
+  Future<int> upsertRequirements(
+    InternshipRequirementsCompanion requirements,
+  ) async {
+    final studentProfileId = requirements.studentProfileId.value;
+    final existing =
+        await (select(internshipRequirements)
+              ..where(
+                (table) => table.studentProfileId.equals(studentProfileId),
+              )
+              ..limit(1))
+            .getSingleOrNull();
+
+    if (existing == null) {
+      return into(internshipRequirements).insert(requirements);
+    }
+
+    await (update(
+      internshipRequirements,
+    )..where((table) => table.id.equals(existing.id))).write(requirements);
+    return existing.id;
   }
 }

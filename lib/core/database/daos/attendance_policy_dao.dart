@@ -15,7 +15,22 @@ class AttendancePolicyDao extends DatabaseAccessor<AsterDatabase>
         .watchSingleOrNull();
   }
 
-  Future<int> upsertPolicy(AttendancePoliciesCompanion policy) {
-    return into(attendancePolicies).insertOnConflictUpdate(policy);
+  Future<int> upsertPolicy(AttendancePoliciesCompanion policy) async {
+    final studentProfileId = policy.studentProfileId.value;
+    final existing =
+        await (select(attendancePolicies)
+              ..where(
+                (table) => table.studentProfileId.equals(studentProfileId),
+              )
+              ..limit(1))
+            .getSingleOrNull();
+    if (existing == null) {
+      return into(attendancePolicies).insert(policy);
+    }
+
+    await (update(
+      attendancePolicies,
+    )..where((table) => table.id.equals(existing.id))).write(policy);
+    return existing.id;
   }
 }

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../../../app/theme/aster_spacing.dart';
 import '../../../../app/theme/aster_theme.dart';
-import '../../../../app/theme/aster_typography.dart';
 import '../../../../core/widgets/buttons/aster_primary_button.dart';
 import '../../../../core/widgets/buttons/aster_secondary_button.dart';
 import '../../../../core/widgets/fields/aster_date_field.dart';
@@ -25,10 +24,16 @@ class _StudentSetupScreenState extends ConsumerState<StudentSetupScreen> {
   final _nameController = TextEditingController();
   final _collegeController = TextEditingController();
   final _courseController = TextEditingController();
-  String? _selectedSemester;
-  DateTime? _startDate;
+  String? _selectedSemester = 'Semester 5';
+  DateTime? _startDate = DateTime(2026, 8, 10);
   DateTime? _endDate;
   bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _courseController.text = 'Diploma in Computer Engineering';
+  }
 
   Future<void> _onContinue() async {
     if (_nameController.text.isEmpty) {
@@ -42,7 +47,7 @@ class _StudentSetupScreenState extends ConsumerState<StudentSetupScreen> {
 
     try {
       final repository = ref.read(studentRepositoryProvider);
-      await repository.saveProfile(
+      final profileId = await repository.saveProfile(
         StudentProfilesCompanion(
           name: drift.Value(_nameController.text),
           collegeName: drift.Value(_collegeController.text),
@@ -52,10 +57,13 @@ class _StudentSetupScreenState extends ConsumerState<StudentSetupScreen> {
           semesterEndDate: drift.Value(_endDate),
         ),
       );
+      await ref.read(databaseProvider).applyFifthSemesterDefaults(profileId);
 
       if (mounted) {
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const AttendancePolicyScreen()),
+          MaterialPageRoute(
+            builder: (_) => const AttendancePolicyScreen(isOnboarding: true),
+          ),
         );
       }
     } catch (e) {
@@ -154,7 +162,7 @@ class _StudentSetupScreenState extends ConsumerState<StudentSetupScreen> {
                     const SizedBox(height: AsterSpacing.spaceLg),
                     AsterTextField(
                       label: 'Primary Course or Major',
-                      hintText: 'e.g., Computer Science',
+                      hintText: 'Diploma in Computer Engineering',
                       controller: _courseController,
                     ),
                     const SizedBox(height: AsterSpacing.spaceLg),
@@ -162,21 +170,13 @@ class _StudentSetupScreenState extends ConsumerState<StudentSetupScreen> {
                       label: 'Current Semester/Term',
                       hintText: 'Select current term',
                       value: _selectedSemester,
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'Fall 2023',
-                          child: Text('Fall 2023'),
+                      items: List.generate(
+                        6,
+                        (index) => DropdownMenuItem(
+                          value: 'Semester ${index + 1}',
+                          child: Text('Semester ${index + 1}'),
                         ),
-                        DropdownMenuItem(
-                          value: 'Spring 2024',
-                          child: Text('Spring 2024'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Summer 2024',
-                          child: Text('Summer 2024'),
-                        ),
-                        DropdownMenuItem(value: 'Other', child: Text('Other')),
-                      ],
+                      ),
                       onChanged: (val) =>
                           setState(() => _selectedSemester = val),
                     ),

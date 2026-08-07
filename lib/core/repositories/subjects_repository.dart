@@ -14,8 +14,8 @@ class SubjectsRepository {
   Future<int> addSubject(SubjectsCompanion subject) =>
       _subjectsDao.insertSubject(subject);
 
-  Future updateSubject(SubjectsCompanion subject) =>
-      _subjectsDao.updateSubject(subject);
+  Future<int> updateSubject(int id, SubjectsCompanion changes) =>
+      _subjectsDao.updateSubject(id, changes);
 
   Future archiveSubject(int id) => _subjectsDao.archiveSubject(id);
 

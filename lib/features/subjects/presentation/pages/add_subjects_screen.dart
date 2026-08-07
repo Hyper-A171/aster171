@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:drift/drift.dart' as drift;
 import '../../../../app/theme/aster_spacing.dart';
 import '../../../../app/theme/aster_theme.dart';
 import '../../../../core/responsive/responsive_layout.dart';
@@ -10,6 +9,7 @@ import '../../../../core/widgets/buttons/aster_primary_button.dart';
 import '../../../../core/providers/database_providers.dart';
 import '../../../../core/database/aster_database.dart';
 import '../../../planning/presentation/pages/weekly_planner_screen.dart';
+import '../widgets/subject_editor_sheet.dart';
 
 class AddSubjectsScreen extends ConsumerWidget {
   const AddSubjectsScreen({super.key});
@@ -44,14 +44,72 @@ class AddSubjectsScreen extends ConsumerWidget {
               borderRadius: BorderRadius.circular(9999),
             ),
             const SizedBox(height: AsterSpacing.spaceLg),
-            Text(
-              'Curriculum & Subjects',
-              style: context.asterTextTheme.headlineSmall,
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Curriculum & Subjects',
+                    style: context.asterTextTheme.headlineSmall,
+                  ),
+                ),
+                activeSubjectsAsync.valueOrNull == null
+                    ? const SizedBox.shrink()
+                    : Chip(
+                        avatar: const Icon(Icons.menu_book_outlined, size: 18),
+                        label: Text(
+                          '${activeSubjectsAsync.value!.length} subjects',
+                        ),
+                      ),
+              ],
             ),
             Text(
-              'Add your subjects to set up your weekly schedule.',
+              'Your Semester 5 Computer Engineering curriculum.',
               style: context.asterTextTheme.bodyMedium?.copyWith(
                 color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: AsterSpacing.spaceLg),
+            AsterCard(
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: context.colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.auto_awesome,
+                      color: context.colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                  const SizedBox(width: AsterSpacing.spaceMd),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'MSBTE Semester 5',
+                          style: context.asterTextTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Import your six confirmed subjects and course codes.',
+                          style: context.asterTextTheme.bodySmall?.copyWith(
+                            color: context.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton.filledTonal(
+                    onPressed: () => _importSemesterFive(context, ref),
+                    tooltip: 'Import Semester 5 subjects',
+                    icon: const Icon(Icons.download_done),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: AsterSpacing.spaceLg),
@@ -111,7 +169,7 @@ class AddSubjectsScreen extends ConsumerWidget {
         ),
       ),
       floatingActionButton: AsterFloatingActionButton(
-        onPressed: () => _showAddSubjectDialog(context, ref),
+        onPressed: () => showSubjectEditorSheet(context, ref),
         icon: const Icon(Icons.add),
         tooltip: 'Add Subject',
       ),
@@ -150,142 +208,92 @@ class AddSubjectsScreen extends ConsumerWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                subject.name,
-                style: context.asterTextTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (subject.code != null && subject.code!.isNotEmpty)
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(
-                  subject.code!,
-                  style: context.asterTextTheme.bodySmall?.copyWith(
-                    color: context.colorScheme.onSurfaceVariant,
+                  subject.name,
+                  style: context.asterTextTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-              const SizedBox(height: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: context.colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(4),
+                if (subject.code != null && subject.code!.isNotEmpty)
+                  Text(
+                    subject.code!,
+                    style: context.asterTextTheme.bodySmall?.copyWith(
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: context.colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    subject.subjectType,
+                    style: context.asterTextTheme.labelSmall,
+                  ),
                 ),
-                child: Text(
-                  subject.subjectType,
-                  style: context.asterTextTheme.labelSmall,
+              ],
+            ),
+          ),
+          PopupMenuButton<String>(
+            tooltip: 'Subject actions',
+            onSelected: (action) async {
+              if (action == 'edit') {
+                await showSubjectEditorSheet(context, ref, subject: subject);
+              } else if (action == 'archive') {
+                await ref
+                    .read(subjectsRepositoryProvider)
+                    .archiveSubject(subject.id);
+              }
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'edit',
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.edit_outlined),
+                  title: Text('Edit'),
+                ),
+              ),
+              PopupMenuItem(
+                value: 'archive',
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.archive_outlined),
+                  title: Text('Archive'),
                 ),
               ),
             ],
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.red),
-            onPressed: () async {
-              await ref
-                  .read(subjectsRepositoryProvider)
-                  .archiveSubject(subject.id);
-            },
           ),
         ],
       ),
     );
   }
 
-  void _showAddSubjectDialog(BuildContext context, WidgetRef ref) {
-    final nameController = TextEditingController();
-    final codeController = TextEditingController();
-    String subjectType = 'Theory';
-    bool isMandatory = true;
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Add Subject'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Subject Name',
-                        hintText: 'e.g. Advanced Algorithms',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: codeController,
-                      decoration: const InputDecoration(
-                        labelText: 'Subject Code',
-                        hintText: 'e.g. CS 401',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      initialValue: subjectType,
-                      decoration: const InputDecoration(labelText: 'Type'),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'Theory',
-                          child: Text('Theory'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Practical',
-                          child: Text('Practical'),
-                        ),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) setState(() => subjectType = val);
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    SwitchListTile(
-                      title: const Text('Mandatory Subject'),
-                      value: isMandatory,
-                      onChanged: (val) => setState(() => isMandatory = val),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    if (nameController.text.trim().isEmpty) return;
-
-                    await ref
-                        .read(subjectsRepositoryProvider)
-                        .addSubject(
-                          SubjectsCompanion.insert(
-                            studentProfileId: 1,
-                            name: nameController.text.trim(),
-                            code: drift.Value(
-                              codeController.text.trim().isEmpty
-                                  ? null
-                                  : codeController.text.trim(),
-                            ),
-                            subjectType: subjectType,
-                            isMandatory: drift.Value(isMandatory),
-                          ),
-                        );
-
-                    if (context.mounted) Navigator.pop(context);
-                  },
-                  child: const Text('Save'),
-                ),
-              ],
-            );
-          },
+  Future<void> _importSemesterFive(BuildContext context, WidgetRef ref) async {
+    final profile = await ref.read(currentStudentProfileProvider.future);
+    if (profile == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Complete your profile first.')),
         );
-      },
-    );
+      }
+      return;
+    }
+
+    await ref.read(databaseProvider).applyFifthSemesterDefaults(profile.id);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Semester 5 subjects are ready.')),
+      );
+    }
   }
 }

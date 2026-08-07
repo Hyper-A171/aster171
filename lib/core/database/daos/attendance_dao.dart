@@ -2,7 +2,6 @@ import 'package:drift/drift.dart';
 import '../aster_database.dart';
 import '../../models/attendance_summary.dart';
 import '../../widgets/cards/aster_status_card.dart';
-import '../../services/attendance_risk_evaluator.dart';
 
 part 'attendance_dao.g.dart';
 

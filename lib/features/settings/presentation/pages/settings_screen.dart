@@ -10,6 +10,8 @@ import 'package:aster/features/profile/presentation/pages/profile_screen.dart';
 import 'package:aster/features/notifications/presentation/pages/notifications_screen.dart';
 import 'package:aster/features/subjects/presentation/pages/attendance_policy_screen.dart';
 import 'package:aster/features/internship/presentation/pages/internship_setup_screen.dart';
+import 'package:aster/features/planning/presentation/pages/timetable_import_screen.dart';
+import 'package:aster/features/planning/presentation/pages/absence_planner_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -120,16 +122,42 @@ class SettingsScreen extends ConsumerWidget {
 
           const AsterSectionHeader(title: 'Curriculum & Internship Setup'),
           ListTile(
+            leading: const Icon(Icons.event_busy_outlined),
+            title: const Text('Plan Travel, Leave or Bunk'),
+            subtitle: const Text(
+              'Check attendance impact and adjust your plan',
+            ),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AbsencePlannerScreen()),
+              );
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.policy_outlined),
             title: const Text('Attendance Policy Thresholds'),
             subtitle: const Text(
-              'Configure minimum (75%) & safety target (80%)',
+              'Fixed minimum (75%) & personal safety target (76%)',
             ),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => const AttendancePolicyScreen(),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.upload_file),
+            title: const Text('Upload College Timetable'),
+            subtitle: const Text('Analyze a PDF or image and create reminders'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const TimetableImportScreen(),
                 ),
               );
             },

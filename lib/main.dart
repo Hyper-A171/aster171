@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app/theme/aster_theme.dart';
 import 'app/theme/theme_mode_controller.dart';
 import 'features/onboarding/presentation/pages/splash_screen.dart';
+import 'core/services/notification_service.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService.instance.initialize();
   runApp(const ProviderScope(child: AsterApp()));
 }
 

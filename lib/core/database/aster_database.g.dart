@@ -637,7 +637,7 @@ class $AttendancePoliciesTable extends AttendancePolicies
         false,
         type: DriftSqlType.double,
         requiredDuringInsert: false,
-        defaultValue: const Constant(80.0),
+        defaultValue: const Constant(76.0),
       );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -3618,6 +3618,40 @@ class $InternshipRequirementsTable extends InternshipRequirements
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _internshipStartDateMeta =
+      const VerificationMeta('internshipStartDate');
+  @override
+  late final GeneratedColumn<DateTime> internshipStartDate =
+      GeneratedColumn<DateTime>(
+        'internship_start_date',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _internshipEndDateMeta = const VerificationMeta(
+    'internshipEndDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> internshipEndDate =
+      GeneratedColumn<DateTime>(
+        'internship_end_date',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _courseCodeMeta = const VerificationMeta(
+    'courseCode',
+  );
+  @override
+  late final GeneratedColumn<String> courseCode = GeneratedColumn<String>(
+    'course_code',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _allowsHalfDayMeta = const VerificationMeta(
     'allowsHalfDay',
   );
@@ -3697,6 +3731,9 @@ class $InternshipRequirementsTable extends InternshipRequirements
     studentProfileId,
     requiredDaysPerWeek,
     requiredHoursPerWeek,
+    internshipStartDate,
+    internshipEndDate,
+    courseCode,
     allowsHalfDay,
     startMinutes,
     endMinutes,
@@ -3746,6 +3783,30 @@ class $InternshipRequirementsTable extends InternshipRequirements
           data['required_hours_per_week']!,
           _requiredHoursPerWeekMeta,
         ),
+      );
+    }
+    if (data.containsKey('internship_start_date')) {
+      context.handle(
+        _internshipStartDateMeta,
+        internshipStartDate.isAcceptableOrUnknown(
+          data['internship_start_date']!,
+          _internshipStartDateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('internship_end_date')) {
+      context.handle(
+        _internshipEndDateMeta,
+        internshipEndDate.isAcceptableOrUnknown(
+          data['internship_end_date']!,
+          _internshipEndDateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('course_code')) {
+      context.handle(
+        _courseCodeMeta,
+        courseCode.isAcceptableOrUnknown(data['course_code']!, _courseCodeMeta),
       );
     }
     if (data.containsKey('allows_half_day')) {
@@ -3818,6 +3879,18 @@ class $InternshipRequirementsTable extends InternshipRequirements
         DriftSqlType.int,
         data['${effectivePrefix}required_hours_per_week'],
       ),
+      internshipStartDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}internship_start_date'],
+      ),
+      internshipEndDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}internship_end_date'],
+      ),
+      courseCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}course_code'],
+      ),
       allowsHalfDay: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}allows_half_day'],
@@ -3857,6 +3930,9 @@ class InternshipRequirement extends DataClass
   final int studentProfileId;
   final int requiredDaysPerWeek;
   final int? requiredHoursPerWeek;
+  final DateTime? internshipStartDate;
+  final DateTime? internshipEndDate;
+  final String? courseCode;
   final bool allowsHalfDay;
   final int? startMinutes;
   final int? endMinutes;
@@ -3868,6 +3944,9 @@ class InternshipRequirement extends DataClass
     required this.studentProfileId,
     required this.requiredDaysPerWeek,
     this.requiredHoursPerWeek,
+    this.internshipStartDate,
+    this.internshipEndDate,
+    this.courseCode,
     required this.allowsHalfDay,
     this.startMinutes,
     this.endMinutes,
@@ -3883,6 +3962,15 @@ class InternshipRequirement extends DataClass
     map['required_days_per_week'] = Variable<int>(requiredDaysPerWeek);
     if (!nullToAbsent || requiredHoursPerWeek != null) {
       map['required_hours_per_week'] = Variable<int>(requiredHoursPerWeek);
+    }
+    if (!nullToAbsent || internshipStartDate != null) {
+      map['internship_start_date'] = Variable<DateTime>(internshipStartDate);
+    }
+    if (!nullToAbsent || internshipEndDate != null) {
+      map['internship_end_date'] = Variable<DateTime>(internshipEndDate);
+    }
+    if (!nullToAbsent || courseCode != null) {
+      map['course_code'] = Variable<String>(courseCode);
     }
     map['allows_half_day'] = Variable<bool>(allowsHalfDay);
     if (!nullToAbsent || startMinutes != null) {
@@ -3905,6 +3993,15 @@ class InternshipRequirement extends DataClass
       requiredHoursPerWeek: requiredHoursPerWeek == null && nullToAbsent
           ? const Value.absent()
           : Value(requiredHoursPerWeek),
+      internshipStartDate: internshipStartDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(internshipStartDate),
+      internshipEndDate: internshipEndDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(internshipEndDate),
+      courseCode: courseCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(courseCode),
       allowsHalfDay: Value(allowsHalfDay),
       startMinutes: startMinutes == null && nullToAbsent
           ? const Value.absent()
@@ -3932,6 +4029,13 @@ class InternshipRequirement extends DataClass
       requiredHoursPerWeek: serializer.fromJson<int?>(
         json['requiredHoursPerWeek'],
       ),
+      internshipStartDate: serializer.fromJson<DateTime?>(
+        json['internshipStartDate'],
+      ),
+      internshipEndDate: serializer.fromJson<DateTime?>(
+        json['internshipEndDate'],
+      ),
+      courseCode: serializer.fromJson<String?>(json['courseCode']),
       allowsHalfDay: serializer.fromJson<bool>(json['allowsHalfDay']),
       startMinutes: serializer.fromJson<int?>(json['startMinutes']),
       endMinutes: serializer.fromJson<int?>(json['endMinutes']),
@@ -3948,6 +4052,9 @@ class InternshipRequirement extends DataClass
       'studentProfileId': serializer.toJson<int>(studentProfileId),
       'requiredDaysPerWeek': serializer.toJson<int>(requiredDaysPerWeek),
       'requiredHoursPerWeek': serializer.toJson<int?>(requiredHoursPerWeek),
+      'internshipStartDate': serializer.toJson<DateTime?>(internshipStartDate),
+      'internshipEndDate': serializer.toJson<DateTime?>(internshipEndDate),
+      'courseCode': serializer.toJson<String?>(courseCode),
       'allowsHalfDay': serializer.toJson<bool>(allowsHalfDay),
       'startMinutes': serializer.toJson<int?>(startMinutes),
       'endMinutes': serializer.toJson<int?>(endMinutes),
@@ -3962,6 +4069,9 @@ class InternshipRequirement extends DataClass
     int? studentProfileId,
     int? requiredDaysPerWeek,
     Value<int?> requiredHoursPerWeek = const Value.absent(),
+    Value<DateTime?> internshipStartDate = const Value.absent(),
+    Value<DateTime?> internshipEndDate = const Value.absent(),
+    Value<String?> courseCode = const Value.absent(),
     bool? allowsHalfDay,
     Value<int?> startMinutes = const Value.absent(),
     Value<int?> endMinutes = const Value.absent(),
@@ -3975,6 +4085,13 @@ class InternshipRequirement extends DataClass
     requiredHoursPerWeek: requiredHoursPerWeek.present
         ? requiredHoursPerWeek.value
         : this.requiredHoursPerWeek,
+    internshipStartDate: internshipStartDate.present
+        ? internshipStartDate.value
+        : this.internshipStartDate,
+    internshipEndDate: internshipEndDate.present
+        ? internshipEndDate.value
+        : this.internshipEndDate,
+    courseCode: courseCode.present ? courseCode.value : this.courseCode,
     allowsHalfDay: allowsHalfDay ?? this.allowsHalfDay,
     startMinutes: startMinutes.present ? startMinutes.value : this.startMinutes,
     endMinutes: endMinutes.present ? endMinutes.value : this.endMinutes,
@@ -3996,6 +4113,15 @@ class InternshipRequirement extends DataClass
       requiredHoursPerWeek: data.requiredHoursPerWeek.present
           ? data.requiredHoursPerWeek.value
           : this.requiredHoursPerWeek,
+      internshipStartDate: data.internshipStartDate.present
+          ? data.internshipStartDate.value
+          : this.internshipStartDate,
+      internshipEndDate: data.internshipEndDate.present
+          ? data.internshipEndDate.value
+          : this.internshipEndDate,
+      courseCode: data.courseCode.present
+          ? data.courseCode.value
+          : this.courseCode,
       allowsHalfDay: data.allowsHalfDay.present
           ? data.allowsHalfDay.value
           : this.allowsHalfDay,
@@ -4020,6 +4146,9 @@ class InternshipRequirement extends DataClass
           ..write('studentProfileId: $studentProfileId, ')
           ..write('requiredDaysPerWeek: $requiredDaysPerWeek, ')
           ..write('requiredHoursPerWeek: $requiredHoursPerWeek, ')
+          ..write('internshipStartDate: $internshipStartDate, ')
+          ..write('internshipEndDate: $internshipEndDate, ')
+          ..write('courseCode: $courseCode, ')
           ..write('allowsHalfDay: $allowsHalfDay, ')
           ..write('startMinutes: $startMinutes, ')
           ..write('endMinutes: $endMinutes, ')
@@ -4036,6 +4165,9 @@ class InternshipRequirement extends DataClass
     studentProfileId,
     requiredDaysPerWeek,
     requiredHoursPerWeek,
+    internshipStartDate,
+    internshipEndDate,
+    courseCode,
     allowsHalfDay,
     startMinutes,
     endMinutes,
@@ -4051,6 +4183,9 @@ class InternshipRequirement extends DataClass
           other.studentProfileId == this.studentProfileId &&
           other.requiredDaysPerWeek == this.requiredDaysPerWeek &&
           other.requiredHoursPerWeek == this.requiredHoursPerWeek &&
+          other.internshipStartDate == this.internshipStartDate &&
+          other.internshipEndDate == this.internshipEndDate &&
+          other.courseCode == this.courseCode &&
           other.allowsHalfDay == this.allowsHalfDay &&
           other.startMinutes == this.startMinutes &&
           other.endMinutes == this.endMinutes &&
@@ -4065,6 +4200,9 @@ class InternshipRequirementsCompanion
   final Value<int> studentProfileId;
   final Value<int> requiredDaysPerWeek;
   final Value<int?> requiredHoursPerWeek;
+  final Value<DateTime?> internshipStartDate;
+  final Value<DateTime?> internshipEndDate;
+  final Value<String?> courseCode;
   final Value<bool> allowsHalfDay;
   final Value<int?> startMinutes;
   final Value<int?> endMinutes;
@@ -4076,6 +4214,9 @@ class InternshipRequirementsCompanion
     this.studentProfileId = const Value.absent(),
     this.requiredDaysPerWeek = const Value.absent(),
     this.requiredHoursPerWeek = const Value.absent(),
+    this.internshipStartDate = const Value.absent(),
+    this.internshipEndDate = const Value.absent(),
+    this.courseCode = const Value.absent(),
     this.allowsHalfDay = const Value.absent(),
     this.startMinutes = const Value.absent(),
     this.endMinutes = const Value.absent(),
@@ -4088,6 +4229,9 @@ class InternshipRequirementsCompanion
     required int studentProfileId,
     this.requiredDaysPerWeek = const Value.absent(),
     this.requiredHoursPerWeek = const Value.absent(),
+    this.internshipStartDate = const Value.absent(),
+    this.internshipEndDate = const Value.absent(),
+    this.courseCode = const Value.absent(),
     this.allowsHalfDay = const Value.absent(),
     this.startMinutes = const Value.absent(),
     this.endMinutes = const Value.absent(),
@@ -4100,6 +4244,9 @@ class InternshipRequirementsCompanion
     Expression<int>? studentProfileId,
     Expression<int>? requiredDaysPerWeek,
     Expression<int>? requiredHoursPerWeek,
+    Expression<DateTime>? internshipStartDate,
+    Expression<DateTime>? internshipEndDate,
+    Expression<String>? courseCode,
     Expression<bool>? allowsHalfDay,
     Expression<int>? startMinutes,
     Expression<int>? endMinutes,
@@ -4114,6 +4261,10 @@ class InternshipRequirementsCompanion
         'required_days_per_week': requiredDaysPerWeek,
       if (requiredHoursPerWeek != null)
         'required_hours_per_week': requiredHoursPerWeek,
+      if (internshipStartDate != null)
+        'internship_start_date': internshipStartDate,
+      if (internshipEndDate != null) 'internship_end_date': internshipEndDate,
+      if (courseCode != null) 'course_code': courseCode,
       if (allowsHalfDay != null) 'allows_half_day': allowsHalfDay,
       if (startMinutes != null) 'start_minutes': startMinutes,
       if (endMinutes != null) 'end_minutes': endMinutes,
@@ -4128,6 +4279,9 @@ class InternshipRequirementsCompanion
     Value<int>? studentProfileId,
     Value<int>? requiredDaysPerWeek,
     Value<int?>? requiredHoursPerWeek,
+    Value<DateTime?>? internshipStartDate,
+    Value<DateTime?>? internshipEndDate,
+    Value<String?>? courseCode,
     Value<bool>? allowsHalfDay,
     Value<int?>? startMinutes,
     Value<int?>? endMinutes,
@@ -4140,6 +4294,9 @@ class InternshipRequirementsCompanion
       studentProfileId: studentProfileId ?? this.studentProfileId,
       requiredDaysPerWeek: requiredDaysPerWeek ?? this.requiredDaysPerWeek,
       requiredHoursPerWeek: requiredHoursPerWeek ?? this.requiredHoursPerWeek,
+      internshipStartDate: internshipStartDate ?? this.internshipStartDate,
+      internshipEndDate: internshipEndDate ?? this.internshipEndDate,
+      courseCode: courseCode ?? this.courseCode,
       allowsHalfDay: allowsHalfDay ?? this.allowsHalfDay,
       startMinutes: startMinutes ?? this.startMinutes,
       endMinutes: endMinutes ?? this.endMinutes,
@@ -4165,6 +4322,17 @@ class InternshipRequirementsCompanion
       map['required_hours_per_week'] = Variable<int>(
         requiredHoursPerWeek.value,
       );
+    }
+    if (internshipStartDate.present) {
+      map['internship_start_date'] = Variable<DateTime>(
+        internshipStartDate.value,
+      );
+    }
+    if (internshipEndDate.present) {
+      map['internship_end_date'] = Variable<DateTime>(internshipEndDate.value);
+    }
+    if (courseCode.present) {
+      map['course_code'] = Variable<String>(courseCode.value);
     }
     if (allowsHalfDay.present) {
       map['allows_half_day'] = Variable<bool>(allowsHalfDay.value);
@@ -4194,6 +4362,9 @@ class InternshipRequirementsCompanion
           ..write('studentProfileId: $studentProfileId, ')
           ..write('requiredDaysPerWeek: $requiredDaysPerWeek, ')
           ..write('requiredHoursPerWeek: $requiredHoursPerWeek, ')
+          ..write('internshipStartDate: $internshipStartDate, ')
+          ..write('internshipEndDate: $internshipEndDate, ')
+          ..write('courseCode: $courseCode, ')
           ..write('allowsHalfDay: $allowsHalfDay, ')
           ..write('startMinutes: $startMinutes, ')
           ..write('endMinutes: $endMinutes, ')
@@ -9913,6 +10084,9 @@ typedef $$InternshipRequirementsTableCreateCompanionBuilder =
       required int studentProfileId,
       Value<int> requiredDaysPerWeek,
       Value<int?> requiredHoursPerWeek,
+      Value<DateTime?> internshipStartDate,
+      Value<DateTime?> internshipEndDate,
+      Value<String?> courseCode,
       Value<bool> allowsHalfDay,
       Value<int?> startMinutes,
       Value<int?> endMinutes,
@@ -9926,6 +10100,9 @@ typedef $$InternshipRequirementsTableUpdateCompanionBuilder =
       Value<int> studentProfileId,
       Value<int> requiredDaysPerWeek,
       Value<int?> requiredHoursPerWeek,
+      Value<DateTime?> internshipStartDate,
+      Value<DateTime?> internshipEndDate,
+      Value<String?> courseCode,
       Value<bool> allowsHalfDay,
       Value<int?> startMinutes,
       Value<int?> endMinutes,
@@ -10023,6 +10200,21 @@ class $$InternshipRequirementsTableFilterComposer
 
   ColumnFilters<int> get requiredHoursPerWeek => $composableBuilder(
     column: $table.requiredHoursPerWeek,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get internshipStartDate => $composableBuilder(
+    column: $table.internshipStartDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get internshipEndDate => $composableBuilder(
+    column: $table.internshipEndDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get courseCode => $composableBuilder(
+    column: $table.courseCode,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -10130,6 +10322,21 @@ class $$InternshipRequirementsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get internshipStartDate => $composableBuilder(
+    column: $table.internshipStartDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get internshipEndDate => $composableBuilder(
+    column: $table.internshipEndDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get courseCode => $composableBuilder(
+    column: $table.courseCode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get allowsHalfDay => $composableBuilder(
     column: $table.allowsHalfDay,
     builder: (column) => ColumnOrderings(column),
@@ -10203,6 +10410,21 @@ class $$InternshipRequirementsTableAnnotationComposer
 
   GeneratedColumn<int> get requiredHoursPerWeek => $composableBuilder(
     column: $table.requiredHoursPerWeek,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get internshipStartDate => $composableBuilder(
+    column: $table.internshipStartDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get internshipEndDate => $composableBuilder(
+    column: $table.internshipEndDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get courseCode => $composableBuilder(
+    column: $table.courseCode,
     builder: (column) => column,
   );
 
@@ -10328,6 +10550,9 @@ class $$InternshipRequirementsTableTableManager
                 Value<int> studentProfileId = const Value.absent(),
                 Value<int> requiredDaysPerWeek = const Value.absent(),
                 Value<int?> requiredHoursPerWeek = const Value.absent(),
+                Value<DateTime?> internshipStartDate = const Value.absent(),
+                Value<DateTime?> internshipEndDate = const Value.absent(),
+                Value<String?> courseCode = const Value.absent(),
                 Value<bool> allowsHalfDay = const Value.absent(),
                 Value<int?> startMinutes = const Value.absent(),
                 Value<int?> endMinutes = const Value.absent(),
@@ -10339,6 +10564,9 @@ class $$InternshipRequirementsTableTableManager
                 studentProfileId: studentProfileId,
                 requiredDaysPerWeek: requiredDaysPerWeek,
                 requiredHoursPerWeek: requiredHoursPerWeek,
+                internshipStartDate: internshipStartDate,
+                internshipEndDate: internshipEndDate,
+                courseCode: courseCode,
                 allowsHalfDay: allowsHalfDay,
                 startMinutes: startMinutes,
                 endMinutes: endMinutes,
@@ -10352,6 +10580,9 @@ class $$InternshipRequirementsTableTableManager
                 required int studentProfileId,
                 Value<int> requiredDaysPerWeek = const Value.absent(),
                 Value<int?> requiredHoursPerWeek = const Value.absent(),
+                Value<DateTime?> internshipStartDate = const Value.absent(),
+                Value<DateTime?> internshipEndDate = const Value.absent(),
+                Value<String?> courseCode = const Value.absent(),
                 Value<bool> allowsHalfDay = const Value.absent(),
                 Value<int?> startMinutes = const Value.absent(),
                 Value<int?> endMinutes = const Value.absent(),
@@ -10363,6 +10594,9 @@ class $$InternshipRequirementsTableTableManager
                 studentProfileId: studentProfileId,
                 requiredDaysPerWeek: requiredDaysPerWeek,
                 requiredHoursPerWeek: requiredHoursPerWeek,
+                internshipStartDate: internshipStartDate,
+                internshipEndDate: internshipEndDate,
+                courseCode: courseCode,
                 allowsHalfDay: allowsHalfDay,
                 startMinutes: startMinutes,
                 endMinutes: endMinutes,

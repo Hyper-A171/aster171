@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../../../app/theme/aster_spacing.dart';
 import '../../../../app/theme/aster_theme.dart';
-import '../../../../app/theme/aster_typography.dart';
 import '../../../../core/widgets/buttons/aster_primary_button.dart';
 import '../../../../core/widgets/fields/aster_text_field.dart';
 import '../../../../core/responsive/responsive_layout.dart';
@@ -12,7 +11,9 @@ import '../../../../core/database/aster_database.dart';
 import 'package:aster/features/internship/presentation/pages/internship_setup_screen.dart';
 
 class AttendancePolicyScreen extends ConsumerStatefulWidget {
-  const AttendancePolicyScreen({super.key});
+  const AttendancePolicyScreen({super.key, this.isOnboarding = false});
+
+  final bool isOnboarding;
 
   @override
   ConsumerState<AttendancePolicyScreen> createState() =>
@@ -22,7 +23,7 @@ class AttendancePolicyScreen extends ConsumerStatefulWidget {
 class _AttendancePolicyScreenState
     extends ConsumerState<AttendancePolicyScreen> {
   final _minAttendanceController = TextEditingController(text: '75');
-  final _targetAttendanceController = TextEditingController(text: '80');
+  final _targetAttendanceController = TextEditingController(text: '76');
   bool _isSaving = false;
 
   Future<void> _onContinue() async {
@@ -40,19 +41,24 @@ class _AttendancePolicyScreenState
       await repository.savePolicy(
         AttendancePoliciesCompanion(
           studentProfileId: drift.Value(profile.id),
-          requiredPercentage: drift.Value(
-            double.tryParse(_minAttendanceController.text) ?? 75.0,
-          ),
-          safetyTargetPercentage: drift.Value(
-            double.tryParse(_targetAttendanceController.text) ?? 80.0,
-          ),
+          requiredPercentage: const drift.Value(75.0),
+          safetyTargetPercentage: const drift.Value(76.0),
         ),
       );
 
       if (mounted) {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const InternshipSetupScreen()),
-        );
+        if (widget.isOnboarding) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => const InternshipSetupScreen(isOnboarding: true),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Attendance policy updated.')),
+          );
+          Navigator.of(context).pop();
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -77,48 +83,50 @@ class _AttendancePolicyScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Progress Step 2
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    height: 4,
-                    color: context.colorScheme.primary,
+            if (widget.isOnboarding) ...[
+              // Progress Step 2
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 4,
+                      color: context.colorScheme.primary,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Container(
-                    height: 4,
-                    color: context.colorScheme.primary,
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Container(
+                      height: 4,
+                      color: context.colorScheme.primary,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Container(
-                    height: 4,
-                    color: context.colorScheme.surfaceContainerHighest,
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Container(
+                      height: 4,
+                      color: context.colorScheme.surfaceContainerHighest,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Container(
-                    height: 4,
-                    color: context.colorScheme.surfaceContainerHighest,
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Container(
+                      height: 4,
+                      color: context.colorScheme.surfaceContainerHighest,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Container(
-                    height: 4,
-                    color: context.colorScheme.surfaceContainerHighest,
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Container(
+                      height: 4,
+                      color: context.colorScheme.surfaceContainerHighest,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AsterSpacing.spaceMd),
-            Text('Step 2 of 5', style: context.asterTextTheme.labelSmall),
-            const SizedBox(height: AsterSpacing.spaceLg),
+                ],
+              ),
+              const SizedBox(height: AsterSpacing.spaceMd),
+              Text('Step 2 of 5', style: context.asterTextTheme.labelSmall),
+              const SizedBox(height: AsterSpacing.spaceLg),
+            ],
 
             Text(
               'Attendance Policy',
@@ -147,17 +155,19 @@ class _AttendancePolicyScreenState
                         child: Text('%'),
                       ),
                       keyboardType: TextInputType.number,
+                      readOnly: true,
                     ),
                     const SizedBox(height: AsterSpacing.spaceXl),
                     AsterTextField(
                       label: 'Personal Safety Target',
                       controller: _targetAttendanceController,
-                      hintText: '80',
+                      hintText: '76',
                       suffixIcon: const Padding(
                         padding: EdgeInsets.all(12),
                         child: Text('%'),
                       ),
                       keyboardType: TextInputType.number,
+                      readOnly: true,
                     ),
                   ],
                 ),
@@ -188,11 +198,11 @@ class _AttendancePolicyScreenState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'The 5% Safety Buffer',
+                          'Your 1% Safety Buffer',
                           style: context.asterTextTheme.titleSmall,
                         ),
                         Text(
-                          'Setting a personal target slightly higher than the minimum gives you breathing room.',
+                          'MSBTE requires 75%. Your fixed personal safety target is 76%.',
                           style: context.asterTextTheme.bodySmall,
                         ),
                       ],
@@ -204,7 +214,7 @@ class _AttendancePolicyScreenState
             const SizedBox(height: AsterSpacing.spaceXl),
 
             AsterPrimaryButton(
-              label: 'Continue',
+              label: widget.isOnboarding ? 'Continue' : 'Save Changes',
               icon: const Icon(Icons.arrow_forward),
               isLoading: _isSaving,
               onPressed: _onContinue,

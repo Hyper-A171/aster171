@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../app/theme/aster_spacing.dart';
 
 /// Reusable Aster Bottom Navigation Bar based on Material 3 NavigationBar.
 class AsterBottomNavigation extends StatelessWidget {

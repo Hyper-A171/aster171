@@ -19,8 +19,9 @@ class SubjectsDao extends DatabaseAccessor<AsterDatabase>
   Future<int> insertSubject(SubjectsCompanion subject) =>
       into(subjects).insert(subject);
 
-  Future updateSubject(SubjectsCompanion subject) =>
-      update(subjects).replace(subject);
+  Future<int> updateSubject(int id, SubjectsCompanion changes) {
+    return (update(subjects)..where((t) => t.id.equals(id))).write(changes);
+  }
 
   Future archiveSubject(int id) {
     return (update(subjects)..where((t) => t.id.equals(id))).write(

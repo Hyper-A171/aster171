@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'daily_recommendation.dart';
+import '../models/timetable_import.dart';
 
 class GeminiException implements Exception {
   const GeminiException(this.message);
@@ -88,6 +90,131 @@ Return only JSON matching the supplied response schema.
       'data_warnings',
     ],
   };
+
+  static const timetableResponseSchema = <String, dynamic>{
+    'type': 'OBJECT',
+    'properties': {
+      'entries': {
+        'type': 'ARRAY',
+        'items': {
+          'type': 'OBJECT',
+          'properties': {
+            'subject_name': {'type': 'STRING'},
+            'course_code': {'type': 'STRING'},
+            'weekday': {'type': 'INTEGER', 'minimum': 1, 'maximum': 7},
+            'start_minutes': {'type': 'INTEGER', 'minimum': 0, 'maximum': 1439},
+            'end_minutes': {'type': 'INTEGER', 'minimum': 1, 'maximum': 1440},
+          },
+          'required': [
+            'subject_name',
+            'course_code',
+            'weekday',
+            'start_minutes',
+            'end_minutes',
+          ],
+        },
+      },
+    },
+    'required': ['entries'],
+  };
+
+  Future<List<TimetableImportEntry>> analyzeTimetable(
+    Uint8List bytes,
+    String mimeType,
+  ) async {
+    if (apiKey.trim().isEmpty) {
+      throw const GeminiException('Gemini API key is not configured');
+    }
+    if (bytes.isEmpty) {
+      throw const GeminiException('The selected timetable file is empty');
+    }
+
+    final uri = Uri.parse(
+      'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent',
+    );
+    final request = await _httpClient
+        .postUrl(uri)
+        .timeout(const Duration(seconds: 20));
+    request.headers.contentType = ContentType.json;
+    request.headers.set('X-goog-api-key', apiKey);
+    request.write(
+      jsonEncode({
+        'contents': [
+          {
+            'role': 'user',
+            'parts': [
+              {
+                'text': '''
+Extract the weekly college timetable from this document.
+Return only actual lecture, laboratory, tutorial, or seminar periods.
+Ignore headings, lunch breaks, recess, notes, and exam schedules.
+Use weekday 1 for Monday through 7 for Sunday.
+Convert times to minutes after midnight using the local time printed in the timetable.
+Preserve course codes when visible. If a code is missing, return an empty string.
+Every end time must be later than its start time.
+''',
+              },
+              {
+                'inlineData': {
+                  'mimeType': mimeType,
+                  'data': base64Encode(bytes),
+                },
+              },
+            ],
+          },
+        ],
+        'generationConfig': {
+          'responseMimeType': 'application/json',
+          'responseSchema': timetableResponseSchema,
+          'temperature': 0.0,
+        },
+      }),
+    );
+
+    final response = await request.close().timeout(const Duration(seconds: 60));
+    final body = await utf8.decoder.bind(response).join();
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw GeminiException(
+        'Timetable analysis failed (${response.statusCode})',
+      );
+    }
+
+    try {
+      final decoded = jsonDecode(body) as Map<String, dynamic>;
+      final candidates = decoded['candidates'] as List;
+      final content = (candidates.first as Map)['content'] as Map;
+      final parts = content['parts'] as List;
+      final jsonText = (parts.first as Map)['text'] as String;
+      final result = jsonDecode(jsonText) as Map<String, dynamic>;
+      final entries =
+          (result['entries'] as List)
+              .map(
+                (entry) => TimetableImportEntry.fromJson(
+                  Map<String, dynamic>.from(entry as Map),
+                ),
+              )
+              .where(
+                (entry) =>
+                    entry.subjectName.isNotEmpty &&
+                    entry.weekday >= 1 &&
+                    entry.weekday <= 7 &&
+                    entry.endMinutes > entry.startMinutes,
+              )
+              .toList()
+            ..sort((a, b) {
+              final day = a.weekday.compareTo(b.weekday);
+              return day != 0 ? day : a.startMinutes.compareTo(b.startMinutes);
+            });
+      if (entries.isEmpty) {
+        throw const GeminiException('No lecture periods were found');
+      }
+      return entries;
+    } on GeminiException {
+      rethrow;
+    } on Object catch (error) {
+      throw GeminiException('Invalid timetable analysis: $error');
+    }
+  }
 
   Future<DailyRecommendation> getDailyRecommendation(
     Map<String, dynamic> snapshot,

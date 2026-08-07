@@ -38,7 +38,7 @@ class AttendancePolicies extends Table {
   RealColumn get requiredPercentage =>
       real().withDefault(const Constant(75.0))();
   RealColumn get safetyTargetPercentage =>
-      real().withDefault(const Constant(80.0))();
+      real().withDefault(const Constant(76.0))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 }
@@ -124,6 +124,9 @@ class InternshipRequirements extends Table {
   IntColumn get requiredDaysPerWeek =>
       integer().withDefault(const Constant(3))();
   IntColumn get requiredHoursPerWeek => integer().nullable()();
+  DateTimeColumn get internshipStartDate => dateTime().nullable()();
+  DateTimeColumn get internshipEndDate => dateTime().nullable()();
+  TextColumn get courseCode => text().nullable()();
   BoolColumn get allowsHalfDay =>
       boolean().withDefault(const Constant(false))();
   IntColumn get startMinutes => integer().nullable()();
@@ -221,10 +224,113 @@ class AsterDatabase extends _$AsterDatabase {
   AsterDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 3;
+
+  Future<void> applyFifthSemesterDefaults(int profileId) async {
+    const curriculum = [
+      ('Operating System', '315319', 'DSC', true),
+      ('Software Engineering', '315323', 'DSC', true),
+      ('Entrepreneurship Development and Startups', '315002', 'AEC', true),
+      ('Seminar and Project Initiation Course', '315003', 'AEC', true),
+      ('Internship (12 weeks)', '315004', 'INP', true),
+      ('Advanced Computer Network', '315321', 'DSE', false),
+    ];
+
+    for (final item in curriculum) {
+      final exists =
+          await (select(subjects)
+                ..where(
+                  (table) =>
+                      table.studentProfileId.equals(profileId) &
+                      table.code.equals(item.$2),
+                )
+                ..limit(1))
+              .getSingleOrNull();
+      if (exists == null) {
+        await into(subjects).insert(
+          SubjectsCompanion.insert(
+            studentProfileId: profileId,
+            name: item.$1,
+            code: Value(item.$2),
+            subjectType: item.$3,
+            isMandatory: Value(item.$4),
+          ),
+        );
+      }
+    }
+  }
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: (migrator, from, to) async {
+      if (from < 2) {
+        await migrator.addColumn(
+          internshipRequirements,
+          internshipRequirements.internshipStartDate,
+        );
+        await migrator.addColumn(
+          internshipRequirements,
+          internshipRequirements.internshipEndDate,
+        );
+        await migrator.addColumn(
+          internshipRequirements,
+          internshipRequirements.courseCode,
+        );
+
+        await update(studentProfiles).write(
+          StudentProfilesCompanion(
+            course: const Value('Diploma in Computer Engineering'),
+            semesterName: const Value('Semester 5'),
+            semesterStartDate: Value(DateTime(2026, 8, 10)),
+          ),
+        );
+        await update(internshipRequirements).write(
+          InternshipRequirementsCompanion(
+            requiredHoursPerWeek: const Value(40),
+            internshipStartDate: Value(DateTime(2026, 6, 1)),
+            internshipEndDate: Value(DateTime(2026, 8, 29)),
+            courseCode: const Value('315004'),
+          ),
+        );
+
+        final profiles = await select(studentProfiles).get();
+        for (final profile in profiles) {
+          await applyFifthSemesterDefaults(profile.id);
+        }
+      }
+      if (from < 3) {
+        await update(attendancePolicies).write(
+          const AttendancePoliciesCompanion(
+            requiredPercentage: Value(75.0),
+            safetyTargetPercentage: Value(76.0),
+          ),
+        );
+        await update(internshipRequirements).write(
+          const InternshipRequirementsCompanion(
+            requiredDaysPerWeek: Value(3),
+            allowsHalfDay: Value(false),
+          ),
+        );
+
+        final requirements = await select(internshipRequirements).get();
+        for (final requirement in requirements) {
+          await (delete(internshipAvailability)..where(
+                (table) => table.internshipRequirementId.equals(requirement.id),
+              ))
+              .go();
+          for (var weekday = 1; weekday <= 7; weekday++) {
+            await into(internshipAvailability).insert(
+              InternshipAvailabilityCompanion.insert(
+                internshipRequirementId: requirement.id,
+                weekday: weekday,
+                isAvailable: Value({1, 2, 3}.contains(weekday)),
+                isFixed: const Value(false),
+              ),
+            );
+          }
+        }
+      }
+    },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');
     },

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/aster_theme.dart';
 import '../../../../core/providers/database_providers.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../../dashboard/presentation/pages/home_navigation_wrapper.dart';
 import 'welcome_screen.dart';
 
@@ -22,9 +23,17 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   void _checkInitialRoute() async {
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
-  
+
     final db = ref.read(databaseProvider);
     final profile = await db.studentProfileDao.getProfile();
+
+    if (profile != null) {
+      try {
+        await NotificationService.instance.enableAndSync(db);
+      } on Object {
+        // Reminder setup must never block app startup.
+      }
+    }
 
     if (!mounted) return;
 

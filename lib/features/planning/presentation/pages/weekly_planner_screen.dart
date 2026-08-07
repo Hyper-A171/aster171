@@ -8,6 +8,8 @@ import '../../../../core/widgets/chips/aster_choice_chip.dart';
 import '../../../../core/widgets/buttons/aster_primary_button.dart';
 import '../../../../core/providers/database_providers.dart';
 import '../../../dashboard/presentation/pages/home_navigation_wrapper.dart';
+import 'timetable_import_screen.dart';
+import 'absence_planner_screen.dart';
 
 class WeeklyPlannerScreen extends ConsumerStatefulWidget {
   final bool isFromOnboarding;
@@ -28,6 +30,7 @@ class _WeeklyPlannerScreenState extends ConsumerState<WeeklyPlannerScreen> {
     'Wednesday',
     'Thursday',
     'Friday',
+    'Saturday',
   ];
 
   @override
@@ -41,9 +44,30 @@ class _WeeklyPlannerScreenState extends ConsumerState<WeeklyPlannerScreen> {
 
     final internshipReqAsync = ref.watch(internshipRequirementsProvider);
     final internshipReq = internshipReqAsync.value;
+    final internshipAvailability = internshipReq == null
+        ? null
+        : ref.watch(internshipAvailabilityProvider(internshipReq.id)).value;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Weekly Planner & Strategy')),
+      appBar: AppBar(
+        title: const Text('Weekly Planner & Strategy'),
+        actions: [
+          IconButton(
+            tooltip: 'Plan travel or leave',
+            icon: const Icon(Icons.event_busy_outlined),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AbsencePlannerScreen()),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Upload timetable',
+            icon: const Icon(Icons.upload_file),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const TimetableImportScreen()),
+            ),
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(
           horizontal: context.sideMargin,
@@ -87,10 +111,7 @@ class _WeeklyPlannerScreenState extends ConsumerState<WeeklyPlannerScreen> {
                 children: [
                   CircleAvatar(
                     backgroundColor: context.colorScheme.primary,
-                    child: const Icon(
-                      Icons.auto_awesome,
-                      color: Colors.white,
-                    ),
+                    child: const Icon(Icons.auto_awesome, color: Colors.white),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -250,16 +271,21 @@ class _WeeklyPlannerScreenState extends ConsumerState<WeeklyPlannerScreen> {
                     const SizedBox(height: AsterSpacing.spaceMd),
                 itemBuilder: (context, index) {
                   final dayName = _weekDays[index];
-                  // Check if this weekday is an internship day
-                  final bool isInternshipDay = internshipReq != null && 
-                      (index + 1) == 2; // Demo logic: Tuesday is internship day
-                  
+                  final bool isInternshipDay =
+                      index == 5 ||
+                      (internshipAvailability?.any(
+                            (day) =>
+                                day.weekday == index + 1 && day.isAvailable,
+                          ) ??
+                          false);
+
                   return _buildDayScheduleCard(
                     context,
                     dayName: dayName,
                     dynamicSubjects: subjects,
                     dayIndex: index,
                     isInternshipDay: isInternshipDay,
+                    isCollegeDay: index < 5,
                   );
                 },
               ),
@@ -385,6 +411,7 @@ class _WeeklyPlannerScreenState extends ConsumerState<WeeklyPlannerScreen> {
     required List dynamicSubjects,
     required int dayIndex,
     required bool isInternshipDay,
+    required bool isCollegeDay,
   }) {
     return AsterCard(
       child: Column(
@@ -420,68 +447,98 @@ class _WeeklyPlannerScreenState extends ConsumerState<WeeklyPlannerScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          Column(
-            children: dynamicSubjects.take(2).map((sub) {
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: context.colorScheme.surfaceContainerLow,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: context.colorScheme.outlineVariant),
+          if (!isCollegeDay && isInternshipDay)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: context.colorScheme.secondaryContainer.withValues(
+                  alpha: 0.35,
                 ),
-                child: Row(
-                  children: [
-                    Icon(
-                      sub.subjectType == 'Practical'
-                          ? Icons.storage
-                          : Icons.menu_book,
-                      size: 18,
-                      color: context.colorScheme.primary,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            sub.name,
-                            style: context.asterTextTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            '${sub.code ?? sub.subjectType} • 09:00 AM',
-                            style: context.asterTextTheme.bodySmall?.copyWith(
-                              color: context.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.work_outline,
+                    color: context.colorScheme.secondary,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Internship scheduled | No college classes',
+                      style: context.asterTextTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
+                  ),
+                ],
+              ),
+            )
+          else
+            Column(
+              children: dynamicSubjects.take(2).map((sub) {
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: context.colorScheme.surfaceContainerLow,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: context.colorScheme.outlineVariant,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        sub.subjectType == 'Practical'
+                            ? Icons.storage
+                            : Icons.menu_book,
+                        size: 18,
+                        color: context.colorScheme.primary,
                       ),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'ATTEND',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green,
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              sub.name,
+                              style: context.asterTextTheme.titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              '${sub.code ?? sub.subjectType} • 09:00 AM',
+                              style: context.asterTextTheme.bodySmall?.copyWith(
+                                color: context.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'ATTEND',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
         ],
       ),
     );

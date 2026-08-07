@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:aster/app/theme/aster_spacing.dart';
 import 'package:aster/app/theme/aster_theme.dart';
 import 'package:aster/core/responsive/responsive_layout.dart';
@@ -26,6 +27,29 @@ class InternshipProgressScreen extends ConsumerWidget {
         builder: (context, snapshot) {
           final requirement = snapshot.data;
           final int requiredDays = requirement?.requiredDaysPerWeek ?? 3;
+          final startDate =
+              requirement?.internshipStartDate ?? DateTime(2026, 6, 1);
+          final endDate =
+              requirement?.internshipEndDate ?? DateTime(2026, 8, 29);
+          final now = DateTime.now();
+          final isPastDeadline = now.isAfter(
+            DateTime(endDate.year, endDate.month, endDate.day, 23, 59, 59),
+          );
+          final totalDays = endDate.difference(startDate).inDays + 1;
+          final elapsedDays = now.isBefore(startDate)
+              ? 0
+              : now.isAfter(endDate)
+              ? totalDays
+              : now.difference(startDate).inDays + 1;
+          final progress = totalDays <= 0
+              ? 0.0
+              : (elapsedDays / totalDays).clamp(0.0, 1.0);
+          final progressPercent = (progress * 100).round();
+          final status = now.isBefore(startDate)
+              ? 'Upcoming'
+              : now.isAfter(endDate)
+              ? 'Completed'
+              : 'In Progress';
 
           return SingleChildScrollView(
             padding: EdgeInsets.symmetric(
@@ -35,125 +59,116 @@ class InternshipProgressScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Track your required field days for this semester.',
-                  style: context.asterTextTheme.bodyMedium?.copyWith(
-                    color: context.colorScheme.onSurfaceVariant,
+                if (!isPastDeadline) ...[
+                  Text(
+                    'Track your MSBTE Semester 5 internship requirement.',
+                    style: context.asterTextTheme.bodyMedium?.copyWith(
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
                   ),
-                ),
-                const SizedBox(height: AsterSpacing.spaceLg),
+                  const SizedBox(height: AsterSpacing.spaceLg),
 
-                // Progress Card
-                AsterCard(
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'WEEKLY REQUIREMENT',
-                                style: context.asterTextTheme.labelSmall,
+                  // Progress Card
+                  AsterCard(
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'INTERNSHIP | 315004',
+                                  style: context.asterTextTheme.labelSmall,
+                                ),
+                                Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.baseline,
+                                  textBaseline: TextBaseline.alphabetic,
+                                  children: [
+                                    Text(
+                                      '$progressPercent%',
+                                      style: context.asterTextTheme.displayLarge
+                                          ?.copyWith(
+                                            color: context.colorScheme.primary,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'complete',
+                                      style: context.asterTextTheme.titleMedium,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            CircleAvatar(
+                              radius: 24,
+                              backgroundColor: context
+                                  .colorScheme
+                                  .primaryContainer
+                                  .withValues(alpha: 0.2),
+                              child: Icon(
+                                Icons.work_outline_rounded,
+                                color: context.colorScheme.primary,
+                                size: 28,
                               ),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.baseline,
-                                textBaseline: TextBaseline.alphabetic,
-                                children: [
-                                  Text(
-                                    '$requiredDays',
-                                    style: context.asterTextTheme.displayLarge
-                                        ?.copyWith(
-                                          color: context.colorScheme.primary,
-                                          fontWeight: FontWeight.bold,
-                                        ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AsterSpacing.spaceLg),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Status',
+                              style: context.asterTextTheme.labelSmall,
+                            ),
+                            Text(
+                              status,
+                              style: context.asterTextTheme.labelSmall
+                                  ?.copyWith(
+                                    color: context.colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
                                   ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'days/week',
-                                    style: context.asterTextTheme.titleMedium,
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          CircleAvatar(
-                            radius: 24,
-                            backgroundColor: context
-                                .colorScheme
-                                .primaryContainer
-                                .withValues(alpha: 0.2),
-                            child: Icon(
-                              Icons.work_outline_rounded,
-                              color: context.colorScheme.primary,
-                              size: 28,
                             ),
+                          ],
+                        ),
+                        const SizedBox(height: AsterSpacing.spaceSm),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            minHeight: 8,
+                            backgroundColor:
+                                context.colorScheme.surfaceContainerHighest,
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: AsterSpacing.spaceLg),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Status',
-                            style: context.asterTextTheme.labelSmall,
-                          ),
-                          Text(
-                            requirement != null
-                                ? 'Active Schedule'
-                                : 'Default (3 Days)',
-                            style: context.asterTextTheme.labelSmall?.copyWith(
-                              color: context.colorScheme.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AsterSpacing.spaceSm),
-                      Row(
-                        children: [
-                          Icon(
-                            requirement != null
-                                ? Icons.check_circle_outline
-                                : Icons.info_outline,
-                            size: 16,
-                            color: context.colorScheme.primary,
-                          ),
-                          const SizedBox(width: AsterSpacing.spaceXs),
-                          Expanded(
-                            child: Text(
-                              requirement != null
-                                  ? 'Your weekly schedule is configured'
-                                  : 'Configure a schedule to replace the default',
-                              style: context.asterTextTheme.bodySmall,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: AsterSpacing.spaceLg),
+                  const SizedBox(height: AsterSpacing.spaceLg),
 
-                // Actions
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const InternshipSetupScreen(),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.edit_calendar),
-                  label: const Text('Configure Internship Schedule'),
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 48),
+                  // Actions
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const InternshipSetupScreen(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.edit_calendar),
+                    label: const Text('Configure Internship Schedule'),
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(double.infinity, 48),
+                    ),
                   ),
-                ),
-                const SizedBox(height: AsterSpacing.spaceXl),
+                  const SizedBox(height: AsterSpacing.spaceXl),
+                ],
 
                 // Activity List
                 Text(
@@ -165,10 +180,11 @@ class InternshipProgressScreen extends ConsumerWidget {
                 const SizedBox(height: AsterSpacing.spaceMd),
                 _buildActivityItem(
                   context,
-                  title: 'Required Field Commitment',
+                  title: 'Official Duration',
                   subtitle:
-                      '$requiredDays Days per week ${requirement?.allowsHalfDay == true ? '(Half-days allowed)' : ''}',
-                  status: 'Configured',
+                      '${DateFormat('d MMM').format(startDate)} - '
+                      '${DateFormat('d MMM yyyy').format(endDate)}',
+                  status: '12 weeks',
                 ),
                 const SizedBox(height: AsterSpacing.spaceSm),
                 _buildActivityItem(
@@ -181,6 +197,14 @@ class InternshipProgressScreen extends ConsumerWidget {
                       ? '${_formatMinutes(requirement.startMinutes!)} - ${_formatMinutes(requirement.endMinutes!)}'
                       : '9:00 AM - 5:00 PM',
                   status: 'Scheduled',
+                ),
+                const SizedBox(height: AsterSpacing.spaceSm),
+                _buildActivityItem(
+                  context,
+                  title: 'Weekly Availability',
+                  subtitle:
+                      '$requiredDays working days ${requirement?.allowsHalfDay == true ? '(half-days allowed)' : ''}',
+                  status: 'Configured',
                 ),
               ],
             ),

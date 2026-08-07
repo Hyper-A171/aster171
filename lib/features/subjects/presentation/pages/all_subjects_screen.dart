@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:drift/drift.dart' as drift;
 import '../../../../app/theme/aster_spacing.dart';
 import '../../../../app/theme/aster_theme.dart';
 import '../../../../core/responsive/responsive_layout.dart';
@@ -9,8 +8,8 @@ import '../../../../core/widgets/layout/aster_section_header.dart';
 import '../../../../core/providers/database_providers.dart';
 import '../../../../core/database/aster_database.dart';
 import '../../../../core/widgets/cards/aster_status_card.dart';
-import '../../../../core/models/attendance_summary.dart';
 import 'subject_details_screen.dart';
+import '../widgets/subject_editor_sheet.dart';
 
 class AllSubjectsScreen extends ConsumerWidget {
   const AllSubjectsScreen({super.key});
@@ -26,7 +25,7 @@ class AllSubjectsScreen extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.add),
             tooltip: 'Add Subject',
-            onPressed: () => _showAddSubjectDialog(context, ref),
+            onPressed: () => showSubjectEditorSheet(context, ref),
           ),
         ],
       ),
@@ -98,7 +97,7 @@ class AllSubjectsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: AsterSpacing.spaceLg),
             ElevatedButton.icon(
-              onPressed: () => _showAddSubjectDialog(context, ref),
+              onPressed: () => showSubjectEditorSheet(context, ref),
               icon: const Icon(Icons.add),
               label: const Text('Add Subject'),
               style: ElevatedButton.styleFrom(
@@ -138,102 +137,6 @@ class AllSubjectsScreen extends ConsumerWidget {
           ],
         ),
       ),
-    );
-  }
-
-  void _showAddSubjectDialog(BuildContext context, WidgetRef ref) {
-    final nameController = TextEditingController();
-    final codeController = TextEditingController();
-    String subjectType = 'Theory';
-    bool isMandatory = true;
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('Add Subject'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Subject Name',
-                        hintText: 'e.g. Advanced Algorithms',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: codeController,
-                      decoration: const InputDecoration(
-                        labelText: 'Subject Code',
-                        hintText: 'e.g. CS 401',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      initialValue: subjectType,
-                      decoration: const InputDecoration(labelText: 'Type'),
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'Theory',
-                          child: Text('Theory'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Practical',
-                          child: Text('Practical'),
-                        ),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) setState(() => subjectType = val);
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    SwitchListTile(
-                      title: const Text('Mandatory Subject'),
-                      value: isMandatory,
-                      onChanged: (val) => setState(() => isMandatory = val),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    if (nameController.text.trim().isEmpty) return;
-
-                    await ref
-                        .read(subjectsRepositoryProvider)
-                        .addSubject(
-                          SubjectsCompanion.insert(
-                            studentProfileId: 1, // Default profile ID
-                            name: nameController.text.trim(),
-                            code: drift.Value(
-                              codeController.text.trim().isEmpty
-                                  ? null
-                                  : codeController.text.trim(),
-                            ),
-                            subjectType: subjectType,
-                            isMandatory: drift.Value(isMandatory),
-                          ),
-                        );
-
-                    if (context.mounted) Navigator.pop(context);
-                  },
-                  child: const Text('Save'),
-                ),
-              ],
-            );
-          },
-        );
-      },
     );
   }
 }
@@ -316,10 +219,12 @@ class _SubjectListCard extends ConsumerWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
-              Icon(
-                Icons.chevron_right,
-                color: context.colorScheme.outlineVariant,
+              const SizedBox(width: 8),
+              IconButton(
+                tooltip: 'Edit subject',
+                onPressed: () =>
+                    showSubjectEditorSheet(context, ref, subject: subject),
+                icon: const Icon(Icons.edit_outlined),
               ),
             ],
           ),

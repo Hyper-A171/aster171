@@ -50,7 +50,7 @@ class AttendanceSummary {
     required double attendedUnits,
     required double totalCountedUnits,
     required double requiredPercentage,
-    double safetyTargetPercentage = 80.0,
+    double safetyTargetPercentage = 76.0,
     int presentCount = 0,
     int absentCount = 0,
     int cancelledCount = 0,

@@ -7,11 +7,9 @@ import '../../../../core/responsive/responsive_layout.dart';
 import '../../../../core/widgets/cards/aster_card.dart';
 import '../../../../core/widgets/buttons/aster_primary_button.dart';
 import '../../../../core/widgets/chips/aster_status_chip.dart';
-import '../../../../core/widgets/cards/aster_status_card.dart';
 import '../../../../core/providers/database_providers.dart';
 import '../../../../core/database/aster_database.dart';
 import '../../../../core/models/attendance_summary.dart';
-import '../../../../core/services/attendance_risk_evaluator.dart';
 import '../../../../core/services/semester_projection_service.dart';
 
 class SubjectDetailsScreen extends ConsumerWidget {
@@ -50,7 +48,7 @@ class SubjectDetailsScreen extends ConsumerWidget {
     List<AttendanceRecord> history,
   ) {
     final double requiredPct = subject.requiredPercentageOverride ?? 75.0;
-    const double safetyTargetPct = 80.0;
+    const double safetyTargetPct = 76.0;
 
     final double maxPossible =
         SemesterProjectionService.calculateMaxPossibleAttendance(

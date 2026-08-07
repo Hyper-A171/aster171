@@ -8,6 +8,8 @@ import 'package:aster/core/providers/database_providers.dart';
 import 'package:aster/core/services/attendance_calculator.dart';
 import 'package:aster/core/services/attendance_risk_evaluator.dart';
 import 'package:aster/core/widgets/cards/aster_status_card.dart';
+import 'package:aster/core/services/notification_service.dart';
+import 'package:aster/core/database/aster_database.dart';
 
 class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
@@ -63,6 +65,8 @@ class NotificationsScreen extends ConsumerWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                const SizedBox(height: AsterSpacing.spaceMd),
+                _ReminderControlCard(database: ref.watch(databaseProvider)),
                 const SizedBox(height: AsterSpacing.spaceMd),
                 ListView.separated(
                   shrinkWrap: true,
@@ -185,7 +189,7 @@ class _SubjectNotificationTile extends ConsumerWidget {
         final status = AttendanceRiskEvaluator.evaluate(
           currentPercentage: pct,
           requiredPercentage: 75.0,
-          safetyTargetPercentage: 80.0,
+          safetyTargetPercentage: 76.0,
         );
 
         if (status == AsterStatus.safe) {
@@ -197,7 +201,7 @@ class _SubjectNotificationTile extends ConsumerWidget {
         if (status == AsterStatus.watch) {
           iconColor = Colors.amber;
           statusText =
-              'Attendance is at ${pct.toStringAsFixed(1)}%. Keep attending to reach safety target (80%).';
+              'Attendance is at ${pct.toStringAsFixed(1)}%. Keep attending to reach your 76% safety target.';
         } else if (status == AsterStatus.risky) {
           iconColor = Colors.orange;
           statusText =
@@ -247,6 +251,130 @@ class _SubjectNotificationTile extends ConsumerWidget {
       },
       loading: () => const SizedBox.shrink(),
       error: (err, stack) => const SizedBox.shrink(),
+    );
+  }
+}
+
+class _ReminderControlCard extends StatefulWidget {
+  const _ReminderControlCard({required this.database});
+
+  final AsterDatabase database;
+
+  @override
+  State<_ReminderControlCard> createState() => _ReminderControlCardState();
+}
+
+class _ReminderControlCardState extends State<_ReminderControlCard> {
+  bool _loading = true;
+  bool _enabled = false;
+  int _pendingCount = 0;
+  String? _message;
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+  }
+
+  Future<void> _refresh() async {
+    final service = NotificationService.instance;
+    final enabled = await service.notificationsEnabled();
+    final count = await service.pendingReminderCount();
+    if (!mounted) return;
+    setState(() {
+      _enabled = enabled;
+      _pendingCount = count;
+      _loading = false;
+    });
+  }
+
+  Future<void> _enableReminders() async {
+    setState(() {
+      _loading = true;
+      _message = null;
+    });
+    final service = NotificationService.instance;
+    final granted = await service.enableAndSync(widget.database);
+    if (!mounted) return;
+    setState(() {
+      _message = granted
+          ? 'Internship and timetable reminders were scheduled automatically.'
+          : 'Notification permission was not granted.';
+    });
+    await _refresh();
+  }
+
+  Future<void> _testReminder() async {
+    await NotificationService.instance.showTestReminder();
+    if (!mounted) return;
+    setState(() => _message = 'A test notification was sent.');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AsterCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                _enabled
+                    ? Icons.notifications_active_outlined
+                    : Icons.notifications_off_outlined,
+                color: _enabled
+                    ? context.colorScheme.primary
+                    : context.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: AsterSpacing.spaceSm),
+              Expanded(
+                child: Text(
+                  'Device reminders',
+                  style: context.asterTextTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              Text(
+                _loading
+                    ? 'Checking...'
+                    : _enabled
+                    ? '$_pendingCount scheduled'
+                    : 'Disabled',
+                style: context.asterTextTheme.labelSmall,
+              ),
+            ],
+          ),
+          const SizedBox(height: AsterSpacing.spaceSm),
+          Text(
+            'Aster sends tomorrow\'s lecture summary at 8:00 PM, class reminders 30 minutes early, and the next period when a lecture ends.',
+            style: context.asterTextTheme.bodySmall?.copyWith(
+              color: context.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          if (_message != null) ...[
+            const SizedBox(height: AsterSpacing.spaceSm),
+            Text(_message!, style: context.asterTextTheme.bodySmall),
+          ],
+          const SizedBox(height: AsterSpacing.spaceMd),
+          Wrap(
+            spacing: AsterSpacing.spaceSm,
+            runSpacing: AsterSpacing.spaceSm,
+            children: [
+              FilledButton.icon(
+                onPressed: _loading ? null : _enableReminders,
+                icon: const Icon(Icons.notifications_active_outlined),
+                label: Text(_enabled ? 'Reschedule' : 'Enable reminders'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _enabled && !_loading ? _testReminder : null,
+                icon: const Icon(Icons.send_outlined),
+                label: const Text('Send test'),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

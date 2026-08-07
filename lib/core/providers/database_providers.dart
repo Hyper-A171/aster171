@@ -25,10 +25,12 @@ final studentRepositoryProvider = Provider<StudentRepository>((ref) {
   return StudentRepository(db.studentProfileDao);
 });
 
-final attendancePolicyRepositoryProvider = Provider<AttendancePolicyRepository>((ref) {
-  final db = ref.watch(databaseProvider);
-  return AttendancePolicyRepository(db.attendancePolicyDao);
-});
+final attendancePolicyRepositoryProvider = Provider<AttendancePolicyRepository>(
+  (ref) {
+    final db = ref.watch(databaseProvider);
+    return AttendancePolicyRepository(db.attendancePolicyDao);
+  },
+);
 
 final attendanceRepositoryProvider = Provider<AttendanceRepository>((ref) {
   final db = ref.watch(databaseProvider);
@@ -47,7 +49,7 @@ final internshipRepositoryProvider = Provider<InternshipRepository>((ref) {
 
 final timetableRepositoryProvider = Provider<TimetableRepository>((ref) {
   final db = ref.watch(databaseProvider);
-  return TimetableRepository(db.timetableDao);
+  return TimetableRepository(db.timetableDao, db);
 });
 
 final activeSubjectsProvider = StreamProvider<List<Subject>>((ref) {
@@ -58,51 +60,72 @@ final subjectDetailProvider = StreamProvider.family<Subject, int>((ref, id) {
   return ref.watch(subjectsRepositoryProvider).watchSubjectById(id);
 });
 
-final subjectAttendanceHistoryProvider = StreamProvider.family<List<AttendanceRecord>, int>((ref, subjectId) {
-  return ref
-      .watch(attendanceRepositoryProvider)
-      .watchAttendanceHistory(subjectId);
-});
+final subjectAttendanceHistoryProvider =
+    StreamProvider.family<List<AttendanceRecord>, int>((ref, subjectId) {
+      return ref
+          .watch(attendanceRepositoryProvider)
+          .watchAttendanceHistory(subjectId);
+    });
 
-final subjectAttendanceSummaryProvider = StreamProvider.family<AttendanceSummary, int>((ref, subjectId) {
-  final subjectAsync = ref.watch(subjectDetailProvider(subjectId));
-  final rawSummaryStream = ref
-      .watch(attendanceRepositoryProvider)
-      .watchSubjectAttendanceSummary(subjectId);
+final subjectAttendanceSummaryProvider =
+    StreamProvider.family<AttendanceSummary, int>((ref, subjectId) {
+      final subjectAsync = ref.watch(subjectDetailProvider(subjectId));
+      final rawSummaryStream = ref
+          .watch(attendanceRepositoryProvider)
+          .watchSubjectAttendanceSummary(subjectId);
 
-  return rawSummaryStream.map((raw) {
-    // We need the subject to get the required percentage
-    final subject = subjectAsync.value;
-    final requiredPct = subject?.requiredPercentageOverride ?? 75.0;
+      return rawSummaryStream.map((raw) {
+        // We need the subject to get the required percentage
+        final subject = subjectAsync.value;
+        final requiredPct = subject?.requiredPercentageOverride ?? 75.0;
 
-    return AttendanceSummary.calculate(
-      attendedUnits: raw.attendedUnits,
-      totalCountedUnits: raw.totalCountedUnits,
-      requiredPercentage: requiredPct,
-      presentCount: raw.presentCount,
-      absentCount: raw.absentCount,
-      cancelledCount: raw.cancelledCount,
-      pendingCount: raw.pendingCount,
-      excusedCount: raw.excusedCount,
-    );
-  });
-});
+        return AttendanceSummary.calculate(
+          attendedUnits: raw.attendedUnits,
+          totalCountedUnits: raw.totalCountedUnits,
+          requiredPercentage: requiredPct,
+          presentCount: raw.presentCount,
+          absentCount: raw.absentCount,
+          cancelledCount: raw.cancelledCount,
+          pendingCount: raw.pendingCount,
+          excusedCount: raw.excusedCount,
+        );
+      });
+    });
 
 final currentStudentProfileProvider = StreamProvider<StudentProfile?>((ref) {
   return ref.watch(studentRepositoryProvider).watchProfile();
 });
 
-final selectedWeeklyPlanProvider = StreamProvider.family<WeeklyPlan?, DateTime>((ref, weekStartDate) {
-  return ref.watch(weeklyPlansRepositoryProvider).watchSelectedPlan(weekStartDate);
-});
+final selectedWeeklyPlanProvider = StreamProvider.family<WeeklyPlan?, DateTime>(
+  (ref, weekStartDate) {
+    return ref
+        .watch(weeklyPlansRepositoryProvider)
+        .watchSelectedPlan(weekStartDate);
+  },
+);
 
-final weeklyPlanDaysProvider = StreamProvider.family<List<WeeklyPlanDay>, int>((ref, planId) {
+final weeklyPlanDaysProvider = StreamProvider.family<List<WeeklyPlanDay>, int>((
+  ref,
+  planId,
+) {
   return ref.watch(weeklyPlansRepositoryProvider).watchPlanDays(planId);
 });
 
-final internshipRequirementsProvider = StreamProvider<InternshipRequirement?>((ref) {
+final internshipRequirementsProvider = StreamProvider<InternshipRequirement?>((
+  ref,
+) {
   final profileAsync = ref.watch(currentStudentProfileProvider);
   final profile = profileAsync.value;
   if (profile == null) return Stream.value(null);
   return ref.watch(internshipRepositoryProvider).watchRequirements(profile.id);
 });
+
+final internshipAvailabilityProvider =
+    StreamProvider.family<List<InternshipAvailabilityData>, int>((
+      ref,
+      requirementId,
+    ) {
+      return ref
+          .watch(internshipRepositoryProvider)
+          .watchAvailability(requirementId);
+    });
