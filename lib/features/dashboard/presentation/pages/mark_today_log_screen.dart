@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,6 +24,8 @@ class _MarkTodayLogScreenState extends ConsumerState<MarkTodayLogScreen> {
   final Map<int, String> _statuses = {};
   bool _loadingExisting = true;
   bool _saving = false;
+  Timer? _clockTimer;
+  DateTime _now = DateTime.now();
 
   DateTime get _today {
     final now = DateTime.now();
@@ -32,6 +36,15 @@ class _MarkTodayLogScreenState extends ConsumerState<MarkTodayLogScreen> {
   void initState() {
     super.initState();
     _loadExisting();
+    _clockTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) setState(() => _now = DateTime.now());
+    });
+  }
+
+  @override
+  void dispose() {
+    _clockTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadExisting() async {
@@ -57,16 +70,28 @@ class _MarkTodayLogScreenState extends ConsumerState<MarkTodayLogScreen> {
   }
 
   Future<void> _save(List<TimetableEntry> entries) async {
-    if (_statuses.length < entries.length) {
+    final now = DateTime.now();
+    final activeEntries = entries
+        .where((entry) => _isActive(entry, now))
+        .toList();
+    if (activeEntries.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Mark every lecture before saving.')),
+        const SnackBar(
+          content: Text('Attendance can only be marked during a lecture.'),
+        ),
+      );
+      return;
+    }
+    if (activeEntries.any((entry) => _statuses[entry.id] == null)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select the current lecture status.')),
       );
       return;
     }
     setState(() => _saving = true);
     try {
       final db = ref.read(databaseProvider);
-      for (final entry in entries) {
+      for (final entry in activeEntries) {
         var session =
             await (db.select(db.lectureSessions)
                   ..where(
@@ -120,6 +145,13 @@ class _MarkTodayLogScreenState extends ConsumerState<MarkTodayLogScreen> {
     }
   }
 
+  bool _isActive(TimetableEntry entry, DateTime time) {
+    final minutes = time.hour * 60 + time.minute;
+    return time.weekday == entry.weekday &&
+        minutes >= entry.startMinutes &&
+        minutes < entry.endMinutes;
+  }
+
   @override
   Widget build(BuildContext context) {
     final db = ref.watch(databaseProvider);
@@ -144,6 +176,9 @@ class _MarkTodayLogScreenState extends ConsumerState<MarkTodayLogScreen> {
                   .toList()
                 ..sort((a, b) => a.startMinutes.compareTo(b.startMinutes));
           if (entries.isEmpty) return _emptyState(context);
+          final activeEntries = entries
+              .where((entry) => _isActive(entry, _now))
+              .toList();
 
           return ListView(
             padding: EdgeInsets.symmetric(
@@ -156,7 +191,9 @@ class _MarkTodayLogScreenState extends ConsumerState<MarkTodayLogScreen> {
                 style: context.asterTextTheme.titleLarge,
               ),
               Text(
-                'Mark the actual status for all ${entries.length} scheduled lectures.',
+                activeEntries.isEmpty
+                    ? 'Attendance is locked because no lecture is currently running.'
+                    : 'Attendance is open only for the current lecture.',
                 style: context.asterTextTheme.bodySmall?.copyWith(
                   color: context.colorScheme.onSurfaceVariant,
                 ),
@@ -169,6 +206,8 @@ class _MarkTodayLogScreenState extends ConsumerState<MarkTodayLogScreen> {
                     entry: entry,
                     subject: names[entry.subjectId],
                     status: _statuses[entry.id],
+                    enabled: _isActive(entry, _now),
+                    isPast: _now.hour * 60 + _now.minute >= entry.endMinutes,
                     onChanged: (status) =>
                         setState(() => _statuses[entry.id] = status),
                   ),
@@ -176,7 +215,9 @@ class _MarkTodayLogScreenState extends ConsumerState<MarkTodayLogScreen> {
               ),
               const SizedBox(height: AsterSpacing.spaceMd),
               FilledButton.icon(
-                onPressed: _saving ? null : () => _save(entries),
+                onPressed: _saving || activeEntries.isEmpty
+                    ? null
+                    : () => _save(entries),
                 icon: _saving
                     ? const SizedBox.square(
                         dimension: 18,
@@ -239,12 +280,16 @@ class _LectureLogCard extends StatelessWidget {
     required this.entry,
     required this.subject,
     required this.status,
+    required this.enabled,
+    required this.isPast,
     required this.onChanged,
   });
 
   final TimetableEntry entry;
   final Subject? subject;
   final String? status;
+  final bool enabled;
+  final bool isPast;
   final ValueChanged<String> onChanged;
 
   @override
@@ -269,12 +314,43 @@ class _LectureLogCard extends StatelessWidget {
                         color: context.colorScheme.onSurfaceVariant,
                       ),
                     ),
+                    if (subject?.teacherName?.isNotEmpty == true)
+                      Text(
+                        subject!.teacherName!,
+                        style: context.asterTextTheme.bodySmall?.copyWith(
+                          color: context.colorScheme.primary,
+                        ),
+                      ),
                   ],
                 ),
               ),
               if (status != null)
                 Icon(Icons.check_circle, color: context.colorScheme.primary),
             ],
+          ),
+          const SizedBox(height: AsterSpacing.spaceSm),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: enabled
+                  ? context.colorScheme.primaryContainer
+                  : context.colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(99),
+            ),
+            child: Text(
+              enabled
+                  ? 'Attendance open now'
+                  : status != null
+                  ? 'Attendance recorded'
+                  : isPast
+                  ? 'Lecture finished — locked'
+                  : 'Upcoming — opens at ${_time(entry.startMinutes)}',
+              style: context.asterTextTheme.labelSmall?.copyWith(
+                color: enabled
+                    ? context.colorScheme.onPrimaryContainer
+                    : context.colorScheme.onSurfaceVariant,
+              ),
+            ),
           ),
           const SizedBox(height: AsterSpacing.spaceMd),
           Wrap(
@@ -302,7 +378,7 @@ class _LectureLogCard extends StatelessWidget {
       selected: status == value,
       avatar: Icon(icon, size: 16),
       label: Text(label),
-      onSelected: (_) => onChanged(value),
+      onSelected: enabled ? (_) => onChanged(value) : null,
     );
   }
 

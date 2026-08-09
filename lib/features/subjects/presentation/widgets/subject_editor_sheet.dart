@@ -34,6 +34,7 @@ class _SubjectEditorState extends State<_SubjectEditor> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _name;
   late final TextEditingController _code;
+  late final TextEditingController _teacher;
   late String _type;
   late bool _mandatory;
   bool _saving = false;
@@ -45,6 +46,7 @@ class _SubjectEditorState extends State<_SubjectEditor> {
     super.initState();
     _name = TextEditingController(text: widget.subject?.name ?? '');
     _code = TextEditingController(text: widget.subject?.code ?? '');
+    _teacher = TextEditingController(text: widget.subject?.teacherName ?? '');
     final oldType = widget.subject?.subjectType;
     _type = _types.contains(oldType) ? oldType! : 'Theory';
     _mandatory = widget.subject?.isMandatory ?? true;
@@ -54,6 +56,7 @@ class _SubjectEditorState extends State<_SubjectEditor> {
   void dispose() {
     _name.dispose();
     _code.dispose();
+    _teacher.dispose();
     super.dispose();
   }
 
@@ -80,6 +83,9 @@ class _SubjectEditorState extends State<_SubjectEditor> {
         name: drift.Value(_name.text.trim()),
         code: drift.Value(normalizedCode.isEmpty ? null : normalizedCode),
         subjectType: drift.Value(_type),
+        teacherName: drift.Value(
+          _teacher.text.trim().isEmpty ? null : _teacher.text.trim(),
+        ),
         isMandatory: drift.Value(_mandatory),
         updatedAt: drift.Value(DateTime.now()),
       );
@@ -94,6 +100,9 @@ class _SubjectEditorState extends State<_SubjectEditor> {
                   normalizedCode.isEmpty ? null : normalizedCode,
                 ),
                 subjectType: _type,
+                teacherName: drift.Value(
+                  _teacher.text.trim().isEmpty ? null : _teacher.text.trim(),
+                ),
                 isMandatory: drift.Value(_mandatory),
               ),
             );
@@ -161,7 +170,16 @@ class _SubjectEditorState extends State<_SubjectEditor> {
                 decoration: const InputDecoration(
                   labelText: 'Course code (optional)',
                   prefixIcon: Icon(Icons.tag),
-                  hintText: '315319',
+                  hintText: 'Enter your course code',
+                ),
+              ),
+              const SizedBox(height: AsterSpacing.spaceMd),
+              TextFormField(
+                controller: _teacher,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(
+                  labelText: 'Teacher name (optional)',
+                  prefixIcon: Icon(Icons.person_outline),
                 ),
               ),
               const SizedBox(height: AsterSpacing.spaceMd),

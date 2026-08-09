@@ -47,7 +47,7 @@ class _StudentSetupScreenState extends ConsumerState<StudentSetupScreen> {
 
     try {
       final repository = ref.read(studentRepositoryProvider);
-      final profileId = await repository.saveProfile(
+      await repository.saveProfile(
         StudentProfilesCompanion(
           name: drift.Value(_nameController.text),
           collegeName: drift.Value(_collegeController.text),
@@ -57,8 +57,6 @@ class _StudentSetupScreenState extends ConsumerState<StudentSetupScreen> {
           semesterEndDate: drift.Value(_endDate),
         ),
       );
-      await ref.read(databaseProvider).applyFifthSemesterDefaults(profileId);
-
       if (mounted) {
         Navigator.of(context).push(
           MaterialPageRoute(

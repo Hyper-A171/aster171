@@ -1075,6 +1075,17 @@ class $SubjectsTable extends Subjects with TableInfo<$SubjectsTable, Subject> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _teacherNameMeta = const VerificationMeta(
+    'teacherName',
+  );
+  @override
+  late final GeneratedColumn<String> teacherName = GeneratedColumn<String>(
+    'teacher_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _isMandatoryMeta = const VerificationMeta(
     'isMandatory',
   );
@@ -1158,6 +1169,7 @@ class $SubjectsTable extends Subjects with TableInfo<$SubjectsTable, Subject> {
     name,
     code,
     subjectType,
+    teacherName,
     isMandatory,
     colorValue,
     requiredPercentageOverride,
@@ -1215,6 +1227,15 @@ class $SubjectsTable extends Subjects with TableInfo<$SubjectsTable, Subject> {
       );
     } else if (isInserting) {
       context.missing(_subjectTypeMeta);
+    }
+    if (data.containsKey('teacher_name')) {
+      context.handle(
+        _teacherNameMeta,
+        teacherName.isAcceptableOrUnknown(
+          data['teacher_name']!,
+          _teacherNameMeta,
+        ),
+      );
     }
     if (data.containsKey('is_mandatory')) {
       context.handle(
@@ -1287,6 +1308,10 @@ class $SubjectsTable extends Subjects with TableInfo<$SubjectsTable, Subject> {
         DriftSqlType.string,
         data['${effectivePrefix}subject_type'],
       )!,
+      teacherName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}teacher_name'],
+      ),
       isMandatory: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}is_mandatory'],
@@ -1326,6 +1351,7 @@ class Subject extends DataClass implements Insertable<Subject> {
   final String name;
   final String? code;
   final String subjectType;
+  final String? teacherName;
   final bool isMandatory;
   final int? colorValue;
   final double? requiredPercentageOverride;
@@ -1338,6 +1364,7 @@ class Subject extends DataClass implements Insertable<Subject> {
     required this.name,
     this.code,
     required this.subjectType,
+    this.teacherName,
     required this.isMandatory,
     this.colorValue,
     this.requiredPercentageOverride,
@@ -1355,6 +1382,9 @@ class Subject extends DataClass implements Insertable<Subject> {
       map['code'] = Variable<String>(code);
     }
     map['subject_type'] = Variable<String>(subjectType);
+    if (!nullToAbsent || teacherName != null) {
+      map['teacher_name'] = Variable<String>(teacherName);
+    }
     map['is_mandatory'] = Variable<bool>(isMandatory);
     if (!nullToAbsent || colorValue != null) {
       map['color_value'] = Variable<int>(colorValue);
@@ -1377,6 +1407,9 @@ class Subject extends DataClass implements Insertable<Subject> {
       name: Value(name),
       code: code == null && nullToAbsent ? const Value.absent() : Value(code),
       subjectType: Value(subjectType),
+      teacherName: teacherName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(teacherName),
       isMandatory: Value(isMandatory),
       colorValue: colorValue == null && nullToAbsent
           ? const Value.absent()
@@ -1402,6 +1435,7 @@ class Subject extends DataClass implements Insertable<Subject> {
       name: serializer.fromJson<String>(json['name']),
       code: serializer.fromJson<String?>(json['code']),
       subjectType: serializer.fromJson<String>(json['subjectType']),
+      teacherName: serializer.fromJson<String?>(json['teacherName']),
       isMandatory: serializer.fromJson<bool>(json['isMandatory']),
       colorValue: serializer.fromJson<int?>(json['colorValue']),
       requiredPercentageOverride: serializer.fromJson<double?>(
@@ -1421,6 +1455,7 @@ class Subject extends DataClass implements Insertable<Subject> {
       'name': serializer.toJson<String>(name),
       'code': serializer.toJson<String?>(code),
       'subjectType': serializer.toJson<String>(subjectType),
+      'teacherName': serializer.toJson<String?>(teacherName),
       'isMandatory': serializer.toJson<bool>(isMandatory),
       'colorValue': serializer.toJson<int?>(colorValue),
       'requiredPercentageOverride': serializer.toJson<double?>(
@@ -1438,6 +1473,7 @@ class Subject extends DataClass implements Insertable<Subject> {
     String? name,
     Value<String?> code = const Value.absent(),
     String? subjectType,
+    Value<String?> teacherName = const Value.absent(),
     bool? isMandatory,
     Value<int?> colorValue = const Value.absent(),
     Value<double?> requiredPercentageOverride = const Value.absent(),
@@ -1450,6 +1486,7 @@ class Subject extends DataClass implements Insertable<Subject> {
     name: name ?? this.name,
     code: code.present ? code.value : this.code,
     subjectType: subjectType ?? this.subjectType,
+    teacherName: teacherName.present ? teacherName.value : this.teacherName,
     isMandatory: isMandatory ?? this.isMandatory,
     colorValue: colorValue.present ? colorValue.value : this.colorValue,
     requiredPercentageOverride: requiredPercentageOverride.present
@@ -1470,6 +1507,9 @@ class Subject extends DataClass implements Insertable<Subject> {
       subjectType: data.subjectType.present
           ? data.subjectType.value
           : this.subjectType,
+      teacherName: data.teacherName.present
+          ? data.teacherName.value
+          : this.teacherName,
       isMandatory: data.isMandatory.present
           ? data.isMandatory.value
           : this.isMandatory,
@@ -1495,6 +1535,7 @@ class Subject extends DataClass implements Insertable<Subject> {
           ..write('name: $name, ')
           ..write('code: $code, ')
           ..write('subjectType: $subjectType, ')
+          ..write('teacherName: $teacherName, ')
           ..write('isMandatory: $isMandatory, ')
           ..write('colorValue: $colorValue, ')
           ..write('requiredPercentageOverride: $requiredPercentageOverride, ')
@@ -1512,6 +1553,7 @@ class Subject extends DataClass implements Insertable<Subject> {
     name,
     code,
     subjectType,
+    teacherName,
     isMandatory,
     colorValue,
     requiredPercentageOverride,
@@ -1528,6 +1570,7 @@ class Subject extends DataClass implements Insertable<Subject> {
           other.name == this.name &&
           other.code == this.code &&
           other.subjectType == this.subjectType &&
+          other.teacherName == this.teacherName &&
           other.isMandatory == this.isMandatory &&
           other.colorValue == this.colorValue &&
           other.requiredPercentageOverride == this.requiredPercentageOverride &&
@@ -1542,6 +1585,7 @@ class SubjectsCompanion extends UpdateCompanion<Subject> {
   final Value<String> name;
   final Value<String?> code;
   final Value<String> subjectType;
+  final Value<String?> teacherName;
   final Value<bool> isMandatory;
   final Value<int?> colorValue;
   final Value<double?> requiredPercentageOverride;
@@ -1554,6 +1598,7 @@ class SubjectsCompanion extends UpdateCompanion<Subject> {
     this.name = const Value.absent(),
     this.code = const Value.absent(),
     this.subjectType = const Value.absent(),
+    this.teacherName = const Value.absent(),
     this.isMandatory = const Value.absent(),
     this.colorValue = const Value.absent(),
     this.requiredPercentageOverride = const Value.absent(),
@@ -1567,6 +1612,7 @@ class SubjectsCompanion extends UpdateCompanion<Subject> {
     required String name,
     this.code = const Value.absent(),
     required String subjectType,
+    this.teacherName = const Value.absent(),
     this.isMandatory = const Value.absent(),
     this.colorValue = const Value.absent(),
     this.requiredPercentageOverride = const Value.absent(),
@@ -1582,6 +1628,7 @@ class SubjectsCompanion extends UpdateCompanion<Subject> {
     Expression<String>? name,
     Expression<String>? code,
     Expression<String>? subjectType,
+    Expression<String>? teacherName,
     Expression<bool>? isMandatory,
     Expression<int>? colorValue,
     Expression<double>? requiredPercentageOverride,
@@ -1595,6 +1642,7 @@ class SubjectsCompanion extends UpdateCompanion<Subject> {
       if (name != null) 'name': name,
       if (code != null) 'code': code,
       if (subjectType != null) 'subject_type': subjectType,
+      if (teacherName != null) 'teacher_name': teacherName,
       if (isMandatory != null) 'is_mandatory': isMandatory,
       if (colorValue != null) 'color_value': colorValue,
       if (requiredPercentageOverride != null)
@@ -1611,6 +1659,7 @@ class SubjectsCompanion extends UpdateCompanion<Subject> {
     Value<String>? name,
     Value<String?>? code,
     Value<String>? subjectType,
+    Value<String?>? teacherName,
     Value<bool>? isMandatory,
     Value<int?>? colorValue,
     Value<double?>? requiredPercentageOverride,
@@ -1624,6 +1673,7 @@ class SubjectsCompanion extends UpdateCompanion<Subject> {
       name: name ?? this.name,
       code: code ?? this.code,
       subjectType: subjectType ?? this.subjectType,
+      teacherName: teacherName ?? this.teacherName,
       isMandatory: isMandatory ?? this.isMandatory,
       colorValue: colorValue ?? this.colorValue,
       requiredPercentageOverride:
@@ -1651,6 +1701,9 @@ class SubjectsCompanion extends UpdateCompanion<Subject> {
     }
     if (subjectType.present) {
       map['subject_type'] = Variable<String>(subjectType.value);
+    }
+    if (teacherName.present) {
+      map['teacher_name'] = Variable<String>(teacherName.value);
     }
     if (isMandatory.present) {
       map['is_mandatory'] = Variable<bool>(isMandatory.value);
@@ -1683,6 +1736,7 @@ class SubjectsCompanion extends UpdateCompanion<Subject> {
           ..write('name: $name, ')
           ..write('code: $code, ')
           ..write('subjectType: $subjectType, ')
+          ..write('teacherName: $teacherName, ')
           ..write('isMandatory: $isMandatory, ')
           ..write('colorValue: $colorValue, ')
           ..write('requiredPercentageOverride: $requiredPercentageOverride, ')
@@ -8215,6 +8269,7 @@ typedef $$SubjectsTableCreateCompanionBuilder =
       required String name,
       Value<String?> code,
       required String subjectType,
+      Value<String?> teacherName,
       Value<bool> isMandatory,
       Value<int?> colorValue,
       Value<double?> requiredPercentageOverride,
@@ -8229,6 +8284,7 @@ typedef $$SubjectsTableUpdateCompanionBuilder =
       Value<String> name,
       Value<String?> code,
       Value<String> subjectType,
+      Value<String?> teacherName,
       Value<bool> isMandatory,
       Value<int?> colorValue,
       Value<double?> requiredPercentageOverride,
@@ -8362,6 +8418,11 @@ class $$SubjectsTableFilterComposer
 
   ColumnFilters<String> get subjectType => $composableBuilder(
     column: $table.subjectType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get teacherName => $composableBuilder(
+    column: $table.teacherName,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -8523,6 +8584,11 @@ class $$SubjectsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get teacherName => $composableBuilder(
+    column: $table.teacherName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get isMandatory => $composableBuilder(
     column: $table.isMandatory,
     builder: (column) => ColumnOrderings(column),
@@ -8597,6 +8663,11 @@ class $$SubjectsTableAnnotationComposer
 
   GeneratedColumn<String> get subjectType => $composableBuilder(
     column: $table.subjectType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get teacherName => $composableBuilder(
+    column: $table.teacherName,
     builder: (column) => column,
   );
 
@@ -8764,6 +8835,7 @@ class $$SubjectsTableTableManager
                 Value<String> name = const Value.absent(),
                 Value<String?> code = const Value.absent(),
                 Value<String> subjectType = const Value.absent(),
+                Value<String?> teacherName = const Value.absent(),
                 Value<bool> isMandatory = const Value.absent(),
                 Value<int?> colorValue = const Value.absent(),
                 Value<double?> requiredPercentageOverride =
@@ -8777,6 +8849,7 @@ class $$SubjectsTableTableManager
                 name: name,
                 code: code,
                 subjectType: subjectType,
+                teacherName: teacherName,
                 isMandatory: isMandatory,
                 colorValue: colorValue,
                 requiredPercentageOverride: requiredPercentageOverride,
@@ -8791,6 +8864,7 @@ class $$SubjectsTableTableManager
                 required String name,
                 Value<String?> code = const Value.absent(),
                 required String subjectType,
+                Value<String?> teacherName = const Value.absent(),
                 Value<bool> isMandatory = const Value.absent(),
                 Value<int?> colorValue = const Value.absent(),
                 Value<double?> requiredPercentageOverride =
@@ -8804,6 +8878,7 @@ class $$SubjectsTableTableManager
                 name: name,
                 code: code,
                 subjectType: subjectType,
+                teacherName: teacherName,
                 isMandatory: isMandatory,
                 colorValue: colorValue,
                 requiredPercentageOverride: requiredPercentageOverride,

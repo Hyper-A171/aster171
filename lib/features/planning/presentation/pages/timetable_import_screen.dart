@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:drift/drift.dart' as drift;
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +32,8 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen> {
   String? _error;
   bool _analyzing = false;
   bool _importing = false;
+  Uint8List? _selectedBytes;
+  String? _selectedMimeType;
 
   static const _weekdays = [
     'Monday',
@@ -68,6 +72,8 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen> {
         'jpg' || 'jpeg' => 'image/jpeg',
         _ => throw Exception('Only PDF, PNG, JPG, and JPEG are supported.'),
       };
+      _selectedBytes = bytes;
+      _selectedMimeType = mimeType;
       final entries = await ref
           .read(geminiClientProvider)
           .analyzeTimetable(bytes, mimeType);
@@ -80,6 +86,33 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen> {
       final message = error is GeminiException
           ? error.message
           : error.toString().replaceFirst('Exception: ', '');
+      if (mounted) setState(() => _error = message);
+    } finally {
+      if (mounted) setState(() => _analyzing = false);
+    }
+  }
+
+  Future<void> _retryAnalysis() async {
+    final bytes = _selectedBytes;
+    final mimeType = _selectedMimeType;
+    if (bytes == null || mimeType == null) {
+      await _chooseAndAnalyze();
+      return;
+    }
+    setState(() {
+      _analyzing = true;
+      _error = null;
+      _entries = const [];
+    });
+    try {
+      final entries = await ref
+          .read(geminiClientProvider)
+          .analyzeTimetable(bytes, mimeType);
+      if (mounted) setState(() => _entries = entries);
+    } catch (error) {
+      final message = error is GeminiException
+          ? error.message
+          : 'Analysis failed. Check your connection and try again.';
       if (mounted) setState(() => _error = message);
     } finally {
       if (mounted) setState(() => _analyzing = false);
@@ -135,12 +168,24 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen> {
                       entry.courseCode.isEmpty ? null : entry.courseCode,
                     ),
                     subjectType: 'Theory',
+                    teacherName: drift.Value(
+                      entry.teacherName.isEmpty ? null : entry.teacherName,
+                    ),
                   ),
                 );
             idsByName[normalizedName] = subjectId;
             if (normalizedCode.isNotEmpty) {
               idsByCode[normalizedCode] = subjectId;
             }
+          } else if (entry.teacherName.isNotEmpty) {
+            await (db.update(
+              db.subjects,
+            )..where((subject) => subject.id.equals(subjectId!))).write(
+              SubjectsCompanion(
+                teacherName: drift.Value(entry.teacherName),
+                updatedAt: drift.Value(DateTime.now()),
+              ),
+            );
           }
 
           await db
@@ -292,6 +337,12 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen> {
                                     ),
                               ),
                             ],
+                            const SizedBox(height: AsterSpacing.spaceSm),
+                            OutlinedButton.icon(
+                              onPressed: _analyzing ? null : _retryAnalysis,
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Retry same file'),
+                            ),
                           ],
                         ),
                       ),
@@ -348,6 +399,14 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen> {
                                   '${_weekdays[entry.weekday - 1]} | ${_formatMinutes(entry.startMinutes)} - ${_formatMinutes(entry.endMinutes)}',
                                   style: context.asterTextTheme.bodySmall,
                                 ),
+                                if (entry.teacherName.isNotEmpty)
+                                  Text(
+                                    entry.teacherName,
+                                    style: context.asterTextTheme.bodySmall
+                                        ?.copyWith(
+                                          color: context.colorScheme.primary,
+                                        ),
+                                  ),
                               ],
                             ),
                           ),
@@ -557,6 +616,16 @@ class _SavedDayCard extends StatelessWidget {
                             color: context.colorScheme.onSurfaceVariant,
                           ),
                         ),
+                        if (subjects[entries[index].subjectId]
+                                ?.teacherName
+                                ?.isNotEmpty ==
+                            true)
+                          Text(
+                            subjects[entries[index].subjectId]!.teacherName!,
+                            style: context.asterTextTheme.bodySmall?.copyWith(
+                              color: context.colorScheme.primary,
+                            ),
+                          ),
                       ],
                     ),
                   ),

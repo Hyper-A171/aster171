@@ -50,6 +50,7 @@ class Subjects extends Table {
   TextColumn get name => text().withLength(min: 1, max: 200)();
   TextColumn get code => text().nullable()();
   TextColumn get subjectType => text()(); // Theory, Practical
+  TextColumn get teacherName => text().nullable()();
   BoolColumn get isMandatory => boolean().withDefault(const Constant(true))();
   IntColumn get colorValue => integer().nullable()();
   RealColumn get requiredPercentageOverride => real().nullable()();
@@ -243,7 +244,7 @@ class AsterDatabase extends _$AsterDatabase {
   AsterDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 7;
 
   Future<void> seedMsbteAcademicCalendar() async {
     final events = [
@@ -310,40 +311,6 @@ class AsterDatabase extends _$AsterDatabase {
     }
   }
 
-  Future<void> applyFifthSemesterDefaults(int profileId) async {
-    const curriculum = [
-      ('Operating System', '315319', 'DSC', true),
-      ('Software Engineering', '315323', 'DSC', true),
-      ('Entrepreneurship Development and Startups', '315002', 'AEC', true),
-      ('Seminar and Project Initiation Course', '315003', 'AEC', true),
-      ('Internship (12 weeks)', '315004', 'INP', true),
-      ('Advanced Computer Network', '315321', 'DSE', false),
-    ];
-
-    for (final item in curriculum) {
-      final exists =
-          await (select(subjects)
-                ..where(
-                  (table) =>
-                      table.studentProfileId.equals(profileId) &
-                      table.code.equals(item.$2),
-                )
-                ..limit(1))
-              .getSingleOrNull();
-      if (exists == null) {
-        await into(subjects).insert(
-          SubjectsCompanion.insert(
-            studentProfileId: profileId,
-            name: item.$1,
-            code: Value(item.$2),
-            subjectType: item.$3,
-            isMandatory: Value(item.$4),
-          ),
-        );
-      }
-    }
-  }
-
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: (migrator, from, to) async {
@@ -376,11 +343,6 @@ class AsterDatabase extends _$AsterDatabase {
             courseCode: const Value('315004'),
           ),
         );
-
-        final profiles = await select(studentProfiles).get();
-        for (final profile in profiles) {
-          await applyFifthSemesterDefaults(profile.id);
-        }
       }
       if (from < 3) {
         await update(attendancePolicies).write(
@@ -427,6 +389,22 @@ class AsterDatabase extends _$AsterDatabase {
       if (from < 5) {
         await migrator.createTable(academicCalendarEvents);
         await seedMsbteAcademicCalendar();
+      }
+      if (from < 6) {
+        await (delete(subjects)..where(
+              (subject) => subject.code.isIn(const [
+                '315319',
+                '315323',
+                '315002',
+                '315003',
+                '315004',
+                '315321',
+              ]),
+            ))
+            .go();
+      }
+      if (from < 7) {
+        await migrator.addColumn(subjects, subjects.teacherName);
       }
     },
     beforeOpen: (details) async {

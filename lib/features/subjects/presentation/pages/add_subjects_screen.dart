@@ -69,50 +69,6 @@ class AddSubjectsScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: AsterSpacing.spaceLg),
-            AsterCard(
-              child: Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: context.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.auto_awesome,
-                      color: context.colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                  const SizedBox(width: AsterSpacing.spaceMd),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'MSBTE Semester 5',
-                          style: context.asterTextTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          'Import your six confirmed subjects and course codes.',
-                          style: context.asterTextTheme.bodySmall?.copyWith(
-                            color: context.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton.filledTonal(
-                    onPressed: () => _importSemesterFive(context, ref),
-                    tooltip: 'Import Semester 5 subjects',
-                    icon: const Icon(Icons.download_done),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AsterSpacing.spaceLg),
             activeSubjectsAsync.when(
               data: (subjects) {
                 if (subjects.isEmpty) {
@@ -276,24 +232,5 @@ class AddSubjectsScreen extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  Future<void> _importSemesterFive(BuildContext context, WidgetRef ref) async {
-    final profile = await ref.read(currentStudentProfileProvider.future);
-    if (profile == null) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Complete your profile first.')),
-        );
-      }
-      return;
-    }
-
-    await ref.read(databaseProvider).applyFifthSemesterDefaults(profile.id);
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Semester 5 subjects are ready.')),
-      );
-    }
   }
 }

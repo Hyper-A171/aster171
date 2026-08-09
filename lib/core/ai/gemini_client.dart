@@ -101,6 +101,7 @@ Return only JSON matching the supplied response schema.
           'properties': {
             'subject_name': {'type': 'STRING'},
             'course_code': {'type': 'STRING'},
+            'teacher_name': {'type': 'STRING'},
             'weekday': {'type': 'INTEGER', 'minimum': 1, 'maximum': 7},
             'start_minutes': {'type': 'INTEGER', 'minimum': 0, 'maximum': 1439},
             'end_minutes': {'type': 'INTEGER', 'minimum': 1, 'maximum': 1440},
@@ -133,6 +134,7 @@ Return only JSON matching the supplied response schema.
 Extract the weekly college timetable from this document.
 Read timetable grids carefully, including rotated text and merged laboratory cells.
 Use period/bell-time headers to calculate start and end times. Expand subject abbreviations using any legend in the document.
+Use the teacher/faculty legend to return teacher_name for every matching subject. Use an empty string when unavailable.
 Return only actual lecture, laboratory, tutorial, project, or seminar periods.
 Ignore headings, lunch, recess, notes, and examination schedules.
 Use weekday 1 for Monday through 7 for Sunday.
@@ -144,6 +146,7 @@ If the document contains multiple classes, prefer Semester 5 Computer Engineerin
     final secondPass = await _extractTimetable(bytes, mimeType, '''
 Re-check this document as a visual timetable grid. The first extraction found no rows.
 Locate weekday labels (Mon-Sat), period-number columns, bell timings, and subject abbreviations even when text is small.
+Read any teacher/faculty legend and attach the corresponding teacher_name to each period.
 If start/end times are in a separate header or bell schedule, join them to each subject cell.
 For a lab spanning multiple periods, return one entry from the first start time to the final end time.
 Extract Semester 5 Computer Engineering/Computer Science when several timetables are shown.
@@ -158,6 +161,31 @@ Never return lunch/recess as a subject. Return every visible teaching period tha
   }
 
   Future<List<TimetableImportEntry>> _extractTimetable(
+    Uint8List bytes,
+    String mimeType,
+    String prompt,
+  ) async {
+    Object? lastNetworkError;
+    for (var attempt = 1; attempt <= 3; attempt++) {
+      try {
+        return await _extractTimetableOnce(bytes, mimeType, prompt);
+      } on SocketException catch (error) {
+        lastNetworkError = error;
+      } on HttpException catch (error) {
+        lastNetworkError = error;
+      } on TimeoutException catch (error) {
+        lastNetworkError = error;
+      }
+      if (attempt < 3) {
+        await Future<void>.delayed(Duration(seconds: attempt * 2));
+      }
+    }
+    throw GeminiException(
+      'Could not connect to Gemini after 3 attempts. Check mobile data/Wi-Fi, disable VPN or Private DNS temporarily, and try again. (${lastNetworkError.runtimeType})',
+    );
+  }
+
+  Future<List<TimetableImportEntry>> _extractTimetableOnce(
     Uint8List bytes,
     String mimeType,
     String prompt,
