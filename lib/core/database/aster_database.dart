@@ -193,6 +193,24 @@ class WeeklyPlanDays extends Table {
   ];
 }
 
+class AcademicCalendarEvents extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get title => text()();
+  TextColumn get category => text()();
+  DateTimeColumn get startDate => dateTime()();
+  DateTimeColumn get endDate => dateTime().nullable()();
+  TextColumn get description => text().nullable()();
+  IntColumn get reminderDaysBefore =>
+      integer().withDefault(const Constant(1))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
+
+  @override
+  List<Set<Column>> get uniqueKeys => [
+    {title, startDate},
+  ];
+}
+
 // --- Database Class ---
 
 @DriftDatabase(
@@ -208,6 +226,7 @@ class WeeklyPlanDays extends Table {
     InternshipSessions,
     WeeklyPlans,
     WeeklyPlanDays,
+    AcademicCalendarEvents,
   ],
   daos: [
     StudentProfileDao,
@@ -224,7 +243,72 @@ class AsterDatabase extends _$AsterDatabase {
   AsterDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 5;
+
+  Future<void> seedMsbteAcademicCalendar() async {
+    final events = [
+      (
+        'Semester 5 college begins',
+        'term',
+        DateTime(2026, 8, 10),
+        null,
+        'College-specific Semester 5 schedule starts.',
+      ),
+      (
+        'Winter 2026 exam form — normal fee',
+        'examForm',
+        DateTime(2026, 8, 20),
+        DateTime(2026, 8, 30),
+        'Candidate form filling with normal fees.',
+      ),
+      (
+        'Winter 2026 exam form — late fee',
+        'examForm',
+        DateTime(2026, 9, 1),
+        DateTime(2026, 9, 3),
+        'Candidate form filling with late fee of Rs. 200.',
+      ),
+      (
+        'Winter 2026 exam form — penalty fee',
+        'examForm',
+        DateTime(2026, 9, 5),
+        DateTime(2026, 9, 6),
+        'Candidate form filling with penalty fee of Rs. 1500.',
+      ),
+      (
+        'Semester 5 first class test',
+        'classTest',
+        DateTime(2026, 9, 21),
+        DateTime(2026, 9, 22),
+        'MSBTE first class-test window.',
+      ),
+      (
+        'Semester 5 second class test',
+        'classTest',
+        DateTime(2026, 10, 12),
+        DateTime(2026, 10, 14),
+        'MSBTE second class-test window.',
+      ),
+      (
+        'Semester 5 academic term ends',
+        'term',
+        DateTime(2026, 10, 17),
+        null,
+        'MSBTE 2026–27 odd-semester academic term ends.',
+      ),
+    ];
+    for (final event in events) {
+      await into(academicCalendarEvents).insertOnConflictUpdate(
+        AcademicCalendarEventsCompanion.insert(
+          title: event.$1,
+          category: event.$2,
+          startDate: event.$3,
+          endDate: Value(event.$4),
+          description: Value(event.$5),
+        ),
+      );
+    }
+  }
 
   Future<void> applyFifthSemesterDefaults(int profileId) async {
     const curriculum = [
@@ -329,6 +413,20 @@ class AsterDatabase extends _$AsterDatabase {
             );
           }
         }
+      }
+      if (from < 4) {
+        await update(studentProfiles).write(
+          StudentProfilesCompanion(
+            course: const Value('Diploma in Computer Engineering'),
+            semesterName: const Value('Semester 5'),
+            semesterStartDate: Value(DateTime(2026, 8, 10)),
+            semesterEndDate: Value(DateTime(2026, 10, 17)),
+          ),
+        );
+      }
+      if (from < 5) {
+        await migrator.createTable(academicCalendarEvents);
+        await seedMsbteAcademicCalendar();
       }
     },
     beforeOpen: (details) async {

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/aster_spacing.dart';
 import '../../../../app/theme/aster_theme.dart';
 import '../../../../core/ai/ai_providers.dart';
+import '../../../../core/ai/gemini_client.dart';
 import '../../../../core/database/aster_database.dart';
 import '../../../../core/models/timetable_import.dart';
 import '../../../../core/providers/database_providers.dart';
@@ -14,7 +15,9 @@ import '../../../../core/services/notification_service.dart';
 import '../../../../core/widgets/cards/aster_card.dart';
 
 class TimetableImportScreen extends ConsumerStatefulWidget {
-  const TimetableImportScreen({super.key});
+  const TimetableImportScreen({super.key, this.scheduleOnly = false});
+
+  final bool scheduleOnly;
 
   @override
   ConsumerState<TimetableImportScreen> createState() =>
@@ -52,6 +55,7 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen> {
       );
       final file = await openFile(acceptedTypeGroups: [timetableFiles]);
       if (file == null) return;
+      if (mounted) setState(() => _fileName = file.name);
       final bytes = await file.readAsBytes();
       if (bytes.length > 10 * 1024 * 1024) {
         throw Exception('Choose a timetable file smaller than 10 MB.');
@@ -73,7 +77,10 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen> {
         _entries = entries;
       });
     } catch (error) {
-      if (mounted) setState(() => _error = error.toString());
+      final message = error is GeminiException
+          ? error.message
+          : error.toString().replaceFirst('Exception: ', '');
+      if (mounted) setState(() => _error = message);
     } finally {
       if (mounted) setState(() => _analyzing = false);
     }
@@ -158,7 +165,10 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen> {
           ),
         ),
       );
-      Navigator.of(context).pop();
+      setState(() {
+        _entries = const [];
+        _fileName = null;
+      });
     } catch (error) {
       if (mounted) setState(() => _error = error.toString());
     } finally {
@@ -179,8 +189,13 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final db = ref.watch(databaseProvider);
+    final subjects =
+        ref.watch(activeSubjectsProvider).value ?? const <Subject>[];
     return Scaffold(
-      appBar: AppBar(title: const Text('Import Timetable')),
+      appBar: AppBar(
+        title: Text(widget.scheduleOnly ? 'Full Schedule' : 'Import Timetable'),
+      ),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(
           horizontal: context.sideMargin,
@@ -189,119 +204,366 @@ class _TimetableImportScreenState extends ConsumerState<TimetableImportScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AsterCard(
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.upload_file,
-                    size: 48,
-                    color: context.colorScheme.primary,
-                  ),
-                  const SizedBox(height: AsterSpacing.spaceSm),
-                  Text(
-                    'Upload your college timetable',
-                    style: context.asterTextTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
+            if (!widget.scheduleOnly) ...[
+              AsterCard(
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.upload_file,
+                      size: 48,
+                      color: context.colorScheme.primary,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: AsterSpacing.spaceXs),
-                  Text(
-                    'Choose a clear PDF or image. Aster will extract lecture days and times for your review.',
-                    style: context.asterTextTheme.bodySmall?.copyWith(
-                      color: context.colorScheme.onSurfaceVariant,
+                    const SizedBox(height: AsterSpacing.spaceSm),
+                    Text(
+                      'Upload your college timetable',
+                      style: context.asterTextTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: AsterSpacing.spaceMd),
-                  FilledButton.icon(
-                    onPressed: _analyzing ? null : _chooseAndAnalyze,
-                    icon: _analyzing
-                        ? const SizedBox.square(
-                            dimension: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.attach_file),
-                    label: Text(
-                      _analyzing ? 'Analyzing timetable...' : 'Choose file',
+                    const SizedBox(height: AsterSpacing.spaceXs),
+                    Text(
+                      'Choose a clear PDF or image. Aster will extract lecture days and times for your review.',
+                      style: context.asterTextTheme.bodySmall?.copyWith(
+                        color: context.colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                  ),
-                ],
-              ),
-            ),
-            if (_error != null) ...[
-              const SizedBox(height: AsterSpacing.spaceMd),
-              Text(
-                _error!,
-                style: context.asterTextTheme.bodySmall?.copyWith(
-                  color: context.colorScheme.error,
+                    const SizedBox(height: AsterSpacing.spaceMd),
+                    FilledButton.icon(
+                      onPressed: _analyzing ? null : _chooseAndAnalyze,
+                      icon: _analyzing
+                          ? const SizedBox.square(
+                              dimension: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.attach_file),
+                      label: Text(
+                        _analyzing ? 'Analyzing timetable...' : 'Choose file',
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-            if (_entries.isNotEmpty) ...[
-              const SizedBox(height: AsterSpacing.spaceLg),
-              Text(
-                'Review ${_entries.length} periods',
-                style: context.asterTextTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+              if (_error != null) ...[
+                const SizedBox(height: AsterSpacing.spaceMd),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AsterSpacing.spaceMd),
+                  decoration: BoxDecoration(
+                    color: context.colorScheme.errorContainer,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.document_scanner_outlined,
+                        color: context.colorScheme.onErrorContainer,
+                      ),
+                      const SizedBox(width: AsterSpacing.spaceSm),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Timetable could not be read',
+                              style: context.asterTextTheme.titleSmall
+                                  ?.copyWith(
+                                    color: context.colorScheme.onErrorContainer,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _error!,
+                              style: context.asterTextTheme.bodySmall?.copyWith(
+                                color: context.colorScheme.onErrorContainer,
+                              ),
+                            ),
+                            if (_fileName != null) ...[
+                              const SizedBox(height: 6),
+                              Text(
+                                'Selected: $_fileName',
+                                style: context.asterTextTheme.labelSmall
+                                    ?.copyWith(
+                                      color:
+                                          context.colorScheme.onErrorContainer,
+                                    ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              if (_fileName != null)
+                const SizedBox(height: AsterSpacing.spaceSm),
                 Text(
-                  _fileName!,
+                  'Tip: crop the image to one class timetable and make sure weekday names and bell timings are readable.',
                   style: context.asterTextTheme.bodySmall?.copyWith(
                     color: context.colorScheme.onSurfaceVariant,
                   ),
                 ),
-              const SizedBox(height: AsterSpacing.spaceMd),
-              ..._entries.map(
-                (entry) => Padding(
-                  padding: const EdgeInsets.only(bottom: AsterSpacing.spaceSm),
-                  child: AsterCard(
-                    padding: const EdgeInsets.all(AsterSpacing.spaceMd),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          child: Text(_weekdays[entry.weekday - 1][0]),
-                        ),
-                        const SizedBox(width: AsterSpacing.spaceMd),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                entry.subjectName,
-                                style: context.asterTextTheme.titleSmall
-                                    ?.copyWith(fontWeight: FontWeight.bold),
-                              ),
-                              Text(
-                                '${_weekdays[entry.weekday - 1]} | ${_formatMinutes(entry.startMinutes)} - ${_formatMinutes(entry.endMinutes)}',
-                                style: context.asterTextTheme.bodySmall,
-                              ),
-                            ],
+              ],
+              if (_entries.isNotEmpty) ...[
+                const SizedBox(height: AsterSpacing.spaceLg),
+                Text(
+                  'Review ${_entries.length} periods',
+                  style: context.asterTextTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                if (_fileName != null)
+                  Text(
+                    _fileName!,
+                    style: context.asterTextTheme.bodySmall?.copyWith(
+                      color: context.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                const SizedBox(height: AsterSpacing.spaceMd),
+                ..._entries.map(
+                  (entry) => Padding(
+                    padding: const EdgeInsets.only(
+                      bottom: AsterSpacing.spaceSm,
+                    ),
+                    child: AsterCard(
+                      padding: const EdgeInsets.all(AsterSpacing.spaceMd),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            child: Text(_weekdays[entry.weekday - 1][0]),
                           ),
-                        ),
-                        if (entry.courseCode.isNotEmpty)
-                          Text(
-                            entry.courseCode,
-                            style: context.asterTextTheme.labelSmall,
+                          const SizedBox(width: AsterSpacing.spaceMd),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  entry.subjectName,
+                                  style: context.asterTextTheme.titleSmall
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                Text(
+                                  '${_weekdays[entry.weekday - 1]} | ${_formatMinutes(entry.startMinutes)} - ${_formatMinutes(entry.endMinutes)}',
+                                  style: context.asterTextTheme.bodySmall,
+                                ),
+                              ],
+                            ),
                           ),
-                      ],
+                          if (entry.courseCode.isNotEmpty)
+                            Text(
+                              entry.courseCode,
+                              style: context.asterTextTheme.labelSmall,
+                            ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: AsterSpacing.spaceMd),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: _importing ? null : _import,
-                  icon: const Icon(Icons.check_circle_outline),
-                  label: Text(
-                    _importing ? 'Importing...' : 'Replace & Import Timetable',
+                const SizedBox(height: AsterSpacing.spaceMd),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _importing ? null : _import,
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: Text(
+                      _importing
+                          ? 'Importing...'
+                          : 'Replace & Import Timetable',
+                    ),
                   ),
                 ),
+              ],
+            ],
+            const SizedBox(height: AsterSpacing.spaceXl),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Your saved timetable',
+                    style: context.asterTextTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.calendar_view_week_outlined,
+                  color: context.colorScheme.primary,
+                ),
+              ],
+            ),
+            const SizedBox(height: AsterSpacing.spaceXs),
+            Text(
+              'This schedule is used for lecture and next-period reminders.',
+              style: context.asterTextTheme.bodySmall?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
               ),
+            ),
+            const SizedBox(height: AsterSpacing.spaceMd),
+            StreamBuilder<List<TimetableEntry>>(
+              stream: db.select(db.timetableEntries).watch(),
+              builder: (context, snapshot) {
+                final subjectIds = subjects
+                    .map((subject) => subject.id)
+                    .toSet();
+                final entries =
+                    (snapshot.data ?? const <TimetableEntry>[])
+                        .where((entry) => subjectIds.contains(entry.subjectId))
+                        .toList()
+                      ..sort((a, b) {
+                        final day = a.weekday.compareTo(b.weekday);
+                        return day != 0
+                            ? day
+                            : a.startMinutes.compareTo(b.startMinutes);
+                      });
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (entries.isEmpty) {
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(AsterSpacing.spaceLg),
+                    decoration: BoxDecoration(
+                      color: context.colorScheme.surfaceContainerLow,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: context.colorScheme.outlineVariant,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.event_note_outlined,
+                          size: 36,
+                          color: context.colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(height: AsterSpacing.spaceSm),
+                        const Text('No timetable has been saved yet.'),
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.scheduleOnly
+                              ? 'Import your college timetable to create the weekly schedule.'
+                              : 'Upload a timetable above to create your weekly schedule.',
+                          textAlign: TextAlign.center,
+                          style: context.asterTextTheme.bodySmall?.copyWith(
+                            color: context.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        if (widget.scheduleOnly) ...[
+                          const SizedBox(height: AsterSpacing.spaceMd),
+                          FilledButton.icon(
+                            onPressed: () =>
+                                Navigator.of(context).pushReplacement(
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const TimetableImportScreen(),
+                                  ),
+                                ),
+                            icon: const Icon(Icons.upload_file),
+                            label: const Text('Import Timetable'),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                }
+                final names = {
+                  for (final subject in subjects) subject.id: subject,
+                };
+                return Column(
+                  children: [
+                    for (var weekday = 1; weekday <= 7; weekday++)
+                      if (entries.any((entry) => entry.weekday == weekday))
+                        _SavedDayCard(
+                          day: _weekdays[weekday - 1],
+                          entries: entries
+                              .where((entry) => entry.weekday == weekday)
+                              .toList(),
+                          subjects: names,
+                          formatMinutes: _formatMinutes,
+                        ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SavedDayCard extends StatelessWidget {
+  const _SavedDayCard({
+    required this.day,
+    required this.entries,
+    required this.subjects,
+    required this.formatMinutes,
+  });
+
+  final String day;
+  final List<TimetableEntry> entries;
+  final Map<int, Subject> subjects;
+  final String Function(int) formatMinutes;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AsterSpacing.spaceMd),
+      child: AsterCard(
+        padding: const EdgeInsets.all(AsterSpacing.spaceMd),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(day, style: context.asterTextTheme.titleMedium),
+                const Spacer(),
+                Text(
+                  '${entries.length} ${entries.length == 1 ? 'period' : 'periods'}',
+                  style: context.asterTextTheme.labelSmall?.copyWith(
+                    color: context.colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: AsterSpacing.spaceLg),
+            for (var index = 0; index < entries.length; index++) ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 82,
+                    child: Text(
+                      formatMinutes(entries[index].startMinutes),
+                      style: context.asterTextTheme.labelMedium?.copyWith(
+                        color: context.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          subjects[entries[index].subjectId]?.name ??
+                              'Unknown subject',
+                          style: context.asterTextTheme.titleSmall,
+                        ),
+                        Text(
+                          '${formatMinutes(entries[index].startMinutes)} – ${formatMinutes(entries[index].endMinutes)}',
+                          style: context.asterTextTheme.bodySmall?.copyWith(
+                            color: context.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              if (index != entries.length - 1)
+                const Divider(height: AsterSpacing.spaceLg),
             ],
           ],
         ),

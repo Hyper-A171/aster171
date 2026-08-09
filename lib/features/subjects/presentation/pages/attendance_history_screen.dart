@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../app/theme/aster_spacing.dart';
 import '../../../../app/theme/aster_theme.dart';
-import '../../../../app/theme/aster_typography.dart';
 import '../../../../core/responsive/responsive_layout.dart';
 import '../../../../core/widgets/cards/aster_card.dart';
 import '../../../../core/widgets/cards/aster_status_card.dart';

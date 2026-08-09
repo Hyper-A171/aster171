@@ -40,7 +40,7 @@ class AsterDropdownField<T> extends StatelessWidget {
         ),
         const SizedBox(height: AsterSpacing.spaceXs),
         DropdownButtonFormField<T>(
-          value: value,
+          initialValue: value,
           items: items,
           onChanged: onChanged,
           style: AsterTypography.bodyLarge.copyWith(

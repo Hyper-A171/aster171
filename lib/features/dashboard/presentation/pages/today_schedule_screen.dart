@@ -185,6 +185,7 @@ class TodayScheduleScreen extends ConsumerWidget {
     );
   }
 
+  // ignore: unused_element
   Widget _buildTransitItem(BuildContext context, {required String duration}) {
     return IntrinsicHeight(
       child: Row(
@@ -269,6 +270,7 @@ class TodayScheduleScreen extends ConsumerWidget {
     );
   }
 
+  // ignore: unused_element
   Widget _buildConflictCard(
     BuildContext context, {
     required String title,
@@ -364,6 +366,7 @@ class TodayScheduleScreen extends ConsumerWidget {
     );
   }
 
+  // ignore: unused_element
   Widget _buildPendingCard(
     BuildContext context, {
     required String title,

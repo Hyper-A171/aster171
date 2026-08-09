@@ -6,8 +6,7 @@ import 'gemini_client.dart';
 /// Gemini client configured at build time with `--dart-define`.
 final geminiClientProvider = Provider<GeminiClient>((ref) {
   const apiKey = String.fromEnvironment('GEMINI_API_KEY');
-  final client = GeminiClient(apiKey: apiKey.trim())+
-  -;
+  final client = GeminiClient(apiKey: apiKey.trim());
   ref.onDispose(client.close);
   return client;
 });

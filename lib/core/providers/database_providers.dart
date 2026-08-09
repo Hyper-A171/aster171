@@ -34,7 +34,7 @@ final attendancePolicyRepositoryProvider = Provider<AttendancePolicyRepository>(
 
 final attendanceRepositoryProvider = Provider<AttendanceRepository>((ref) {
   final db = ref.watch(databaseProvider);
-  return AttendanceRepository(db.attendanceDao, db.lectureSessionsDao);
+  return AttendanceRepository(db.attendanceDao);
 });
 
 final weeklyPlansRepositoryProvider = Provider<WeeklyPlansRepository>((ref) {

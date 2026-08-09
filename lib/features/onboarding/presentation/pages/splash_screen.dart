@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/aster_theme.dart';
@@ -25,15 +27,21 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     if (!mounted) return;
 
     final db = ref.read(databaseProvider);
-    final profile = await db.studentProfileDao.getProfile();
+    final profile = await db.studentProfileDao.getProfile().timeout(
+      const Duration(seconds: 8),
+      onTimeout: () => null,
+    );
 
-    if (profile != null) {
+    unawaited(() async {
       try {
-        await NotificationService.instance.enableAndSync(db);
+        await db.seedMsbteAcademicCalendar();
+        if (profile != null) {
+          await NotificationService.instance.syncAllReminders(db);
+        }
       } on Object {
-        // Reminder setup must never block app startup.
+        // Calendar and reminder maintenance must never block startup.
       }
-    }
+    }());
 
     if (!mounted) return;
 

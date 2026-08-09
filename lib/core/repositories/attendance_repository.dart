@@ -1,14 +1,11 @@
-import 'package:drift/drift.dart' as drift;
 import '../database/aster_database.dart';
 import '../database/daos/attendance_dao.dart';
-import '../database/daos/lecture_sessions_dao.dart';
 import '../models/attendance_summary.dart';
 
 class AttendanceRepository {
   final AttendanceDao _attendanceDao;
-  final LectureSessionsDao _lectureSessionsDao;
 
-  AttendanceRepository(this._attendanceDao, this._lectureSessionsDao);
+  AttendanceRepository(this._attendanceDao);
 
   Stream<List<AttendanceRecord>> watchAttendanceHistory(int subjectId) =>
       _attendanceDao.watchAttendanceHistory(subjectId);

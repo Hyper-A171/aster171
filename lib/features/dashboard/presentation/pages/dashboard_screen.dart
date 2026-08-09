@@ -14,7 +14,9 @@ import 'package:aster/core/ai/daily_recommendation.dart';
 import 'package:aster/features/profile/presentation/pages/profile_screen.dart';
 import 'package:aster/features/notifications/presentation/pages/notifications_screen.dart';
 import 'package:aster/features/subjects/presentation/pages/add_subjects_screen.dart';
+import 'package:aster/features/planning/presentation/pages/timetable_import_screen.dart';
 import 'today_schedule_screen.dart';
+import 'mark_today_log_screen.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -238,8 +240,10 @@ class DashboardScreen extends ConsumerWidget {
                       ),
                     );
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Attendance log updated!')),
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const MarkTodayLogScreen(),
+                      ),
                     );
                   }
                 },
@@ -317,7 +321,12 @@ class DashboardScreen extends ConsumerWidget {
           const SizedBox(height: AsterSpacing.spaceMd),
           Center(
             child: TextButton(
-              onPressed: () {},
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const TimetableImportScreen(scheduleOnly: true),
+                ),
+              ),
               child: const Text('View full schedule'),
             ),
           ),
@@ -393,7 +402,7 @@ class DashboardScreen extends ConsumerWidget {
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (_, __) => const SizedBox.shrink(),
+            error: (_, _) => const SizedBox.shrink(),
           ),
           const SizedBox(height: AsterSpacing.spaceMd),
           AsterPrimaryButton(

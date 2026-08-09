@@ -6549,6 +6549,568 @@ class WeeklyPlanDaysCompanion extends UpdateCompanion<WeeklyPlanDay> {
   }
 }
 
+class $AcademicCalendarEventsTable extends AcademicCalendarEvents
+    with TableInfo<$AcademicCalendarEventsTable, AcademicCalendarEvent> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AcademicCalendarEventsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _categoryMeta = const VerificationMeta(
+    'category',
+  );
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+    'category',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _startDateMeta = const VerificationMeta(
+    'startDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startDate = GeneratedColumn<DateTime>(
+    'start_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _endDateMeta = const VerificationMeta(
+    'endDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> endDate = GeneratedColumn<DateTime>(
+    'end_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _reminderDaysBeforeMeta =
+      const VerificationMeta('reminderDaysBefore');
+  @override
+  late final GeneratedColumn<int> reminderDaysBefore = GeneratedColumn<int>(
+    'reminder_days_before',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+    defaultValue: currentDateAndTime,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    title,
+    category,
+    startDate,
+    endDate,
+    description,
+    reminderDaysBefore,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'academic_calendar_events';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AcademicCalendarEvent> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('category')) {
+      context.handle(
+        _categoryMeta,
+        category.isAcceptableOrUnknown(data['category']!, _categoryMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_categoryMeta);
+    }
+    if (data.containsKey('start_date')) {
+      context.handle(
+        _startDateMeta,
+        startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startDateMeta);
+    }
+    if (data.containsKey('end_date')) {
+      context.handle(
+        _endDateMeta,
+        endDate.isAcceptableOrUnknown(data['end_date']!, _endDateMeta),
+      );
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reminder_days_before')) {
+      context.handle(
+        _reminderDaysBeforeMeta,
+        reminderDaysBefore.isAcceptableOrUnknown(
+          data['reminder_days_before']!,
+          _reminderDaysBeforeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {title, startDate},
+  ];
+  @override
+  AcademicCalendarEvent map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AcademicCalendarEvent(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      category: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}category'],
+      )!,
+      startDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}start_date'],
+      )!,
+      endDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}end_date'],
+      ),
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      ),
+      reminderDaysBefore: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}reminder_days_before'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $AcademicCalendarEventsTable createAlias(String alias) {
+    return $AcademicCalendarEventsTable(attachedDatabase, alias);
+  }
+}
+
+class AcademicCalendarEvent extends DataClass
+    implements Insertable<AcademicCalendarEvent> {
+  final int id;
+  final String title;
+  final String category;
+  final DateTime startDate;
+  final DateTime? endDate;
+  final String? description;
+  final int reminderDaysBefore;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const AcademicCalendarEvent({
+    required this.id,
+    required this.title,
+    required this.category,
+    required this.startDate,
+    this.endDate,
+    this.description,
+    required this.reminderDaysBefore,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['title'] = Variable<String>(title);
+    map['category'] = Variable<String>(category);
+    map['start_date'] = Variable<DateTime>(startDate);
+    if (!nullToAbsent || endDate != null) {
+      map['end_date'] = Variable<DateTime>(endDate);
+    }
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
+    map['reminder_days_before'] = Variable<int>(reminderDaysBefore);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  AcademicCalendarEventsCompanion toCompanion(bool nullToAbsent) {
+    return AcademicCalendarEventsCompanion(
+      id: Value(id),
+      title: Value(title),
+      category: Value(category),
+      startDate: Value(startDate),
+      endDate: endDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(endDate),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
+      reminderDaysBefore: Value(reminderDaysBefore),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory AcademicCalendarEvent.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AcademicCalendarEvent(
+      id: serializer.fromJson<int>(json['id']),
+      title: serializer.fromJson<String>(json['title']),
+      category: serializer.fromJson<String>(json['category']),
+      startDate: serializer.fromJson<DateTime>(json['startDate']),
+      endDate: serializer.fromJson<DateTime?>(json['endDate']),
+      description: serializer.fromJson<String?>(json['description']),
+      reminderDaysBefore: serializer.fromJson<int>(json['reminderDaysBefore']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'title': serializer.toJson<String>(title),
+      'category': serializer.toJson<String>(category),
+      'startDate': serializer.toJson<DateTime>(startDate),
+      'endDate': serializer.toJson<DateTime?>(endDate),
+      'description': serializer.toJson<String?>(description),
+      'reminderDaysBefore': serializer.toJson<int>(reminderDaysBefore),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  AcademicCalendarEvent copyWith({
+    int? id,
+    String? title,
+    String? category,
+    DateTime? startDate,
+    Value<DateTime?> endDate = const Value.absent(),
+    Value<String?> description = const Value.absent(),
+    int? reminderDaysBefore,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => AcademicCalendarEvent(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    category: category ?? this.category,
+    startDate: startDate ?? this.startDate,
+    endDate: endDate.present ? endDate.value : this.endDate,
+    description: description.present ? description.value : this.description,
+    reminderDaysBefore: reminderDaysBefore ?? this.reminderDaysBefore,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  AcademicCalendarEvent copyWithCompanion(
+    AcademicCalendarEventsCompanion data,
+  ) {
+    return AcademicCalendarEvent(
+      id: data.id.present ? data.id.value : this.id,
+      title: data.title.present ? data.title.value : this.title,
+      category: data.category.present ? data.category.value : this.category,
+      startDate: data.startDate.present ? data.startDate.value : this.startDate,
+      endDate: data.endDate.present ? data.endDate.value : this.endDate,
+      description: data.description.present
+          ? data.description.value
+          : this.description,
+      reminderDaysBefore: data.reminderDaysBefore.present
+          ? data.reminderDaysBefore.value
+          : this.reminderDaysBefore,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AcademicCalendarEvent(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('category: $category, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
+          ..write('description: $description, ')
+          ..write('reminderDaysBefore: $reminderDaysBefore, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    title,
+    category,
+    startDate,
+    endDate,
+    description,
+    reminderDaysBefore,
+    createdAt,
+    updatedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AcademicCalendarEvent &&
+          other.id == this.id &&
+          other.title == this.title &&
+          other.category == this.category &&
+          other.startDate == this.startDate &&
+          other.endDate == this.endDate &&
+          other.description == this.description &&
+          other.reminderDaysBefore == this.reminderDaysBefore &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class AcademicCalendarEventsCompanion
+    extends UpdateCompanion<AcademicCalendarEvent> {
+  final Value<int> id;
+  final Value<String> title;
+  final Value<String> category;
+  final Value<DateTime> startDate;
+  final Value<DateTime?> endDate;
+  final Value<String?> description;
+  final Value<int> reminderDaysBefore;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  const AcademicCalendarEventsCompanion({
+    this.id = const Value.absent(),
+    this.title = const Value.absent(),
+    this.category = const Value.absent(),
+    this.startDate = const Value.absent(),
+    this.endDate = const Value.absent(),
+    this.description = const Value.absent(),
+    this.reminderDaysBefore = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  AcademicCalendarEventsCompanion.insert({
+    this.id = const Value.absent(),
+    required String title,
+    required String category,
+    required DateTime startDate,
+    this.endDate = const Value.absent(),
+    this.description = const Value.absent(),
+    this.reminderDaysBefore = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  }) : title = Value(title),
+       category = Value(category),
+       startDate = Value(startDate);
+  static Insertable<AcademicCalendarEvent> custom({
+    Expression<int>? id,
+    Expression<String>? title,
+    Expression<String>? category,
+    Expression<DateTime>? startDate,
+    Expression<DateTime>? endDate,
+    Expression<String>? description,
+    Expression<int>? reminderDaysBefore,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (title != null) 'title': title,
+      if (category != null) 'category': category,
+      if (startDate != null) 'start_date': startDate,
+      if (endDate != null) 'end_date': endDate,
+      if (description != null) 'description': description,
+      if (reminderDaysBefore != null)
+        'reminder_days_before': reminderDaysBefore,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  AcademicCalendarEventsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? title,
+    Value<String>? category,
+    Value<DateTime>? startDate,
+    Value<DateTime?>? endDate,
+    Value<String?>? description,
+    Value<int>? reminderDaysBefore,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+  }) {
+    return AcademicCalendarEventsCompanion(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      category: category ?? this.category,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      description: description ?? this.description,
+      reminderDaysBefore: reminderDaysBefore ?? this.reminderDaysBefore,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
+    }
+    if (startDate.present) {
+      map['start_date'] = Variable<DateTime>(startDate.value);
+    }
+    if (endDate.present) {
+      map['end_date'] = Variable<DateTime>(endDate.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (reminderDaysBefore.present) {
+      map['reminder_days_before'] = Variable<int>(reminderDaysBefore.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AcademicCalendarEventsCompanion(')
+          ..write('id: $id, ')
+          ..write('title: $title, ')
+          ..write('category: $category, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
+          ..write('description: $description, ')
+          ..write('reminderDaysBefore: $reminderDaysBefore, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AsterDatabase extends GeneratedDatabase {
   _$AsterDatabase(QueryExecutor e) : super(e);
   $AsterDatabaseManager get managers => $AsterDatabaseManager(this);
@@ -6574,6 +7136,8 @@ abstract class _$AsterDatabase extends GeneratedDatabase {
       $InternshipSessionsTable(this);
   late final $WeeklyPlansTable weeklyPlans = $WeeklyPlansTable(this);
   late final $WeeklyPlanDaysTable weeklyPlanDays = $WeeklyPlanDaysTable(this);
+  late final $AcademicCalendarEventsTable academicCalendarEvents =
+      $AcademicCalendarEventsTable(this);
   late final StudentProfileDao studentProfileDao = StudentProfileDao(
     this as AsterDatabase,
   );
@@ -6606,6 +7170,7 @@ abstract class _$AsterDatabase extends GeneratedDatabase {
     internshipSessions,
     weeklyPlans,
     weeklyPlanDays,
+    academicCalendarEvents,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -12163,6 +12728,299 @@ typedef $$WeeklyPlanDaysTableProcessedTableManager =
       WeeklyPlanDay,
       PrefetchHooks Function({bool weeklyPlanId})
     >;
+typedef $$AcademicCalendarEventsTableCreateCompanionBuilder =
+    AcademicCalendarEventsCompanion Function({
+      Value<int> id,
+      required String title,
+      required String category,
+      required DateTime startDate,
+      Value<DateTime?> endDate,
+      Value<String?> description,
+      Value<int> reminderDaysBefore,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+    });
+typedef $$AcademicCalendarEventsTableUpdateCompanionBuilder =
+    AcademicCalendarEventsCompanion Function({
+      Value<int> id,
+      Value<String> title,
+      Value<String> category,
+      Value<DateTime> startDate,
+      Value<DateTime?> endDate,
+      Value<String?> description,
+      Value<int> reminderDaysBefore,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+    });
+
+class $$AcademicCalendarEventsTableFilterComposer
+    extends Composer<_$AsterDatabase, $AcademicCalendarEventsTable> {
+  $$AcademicCalendarEventsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startDate => $composableBuilder(
+    column: $table.startDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get endDate => $composableBuilder(
+    column: $table.endDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get reminderDaysBefore => $composableBuilder(
+    column: $table.reminderDaysBefore,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AcademicCalendarEventsTableOrderingComposer
+    extends Composer<_$AsterDatabase, $AcademicCalendarEventsTable> {
+  $$AcademicCalendarEventsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get category => $composableBuilder(
+    column: $table.category,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startDate => $composableBuilder(
+    column: $table.startDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get endDate => $composableBuilder(
+    column: $table.endDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get reminderDaysBefore => $composableBuilder(
+    column: $table.reminderDaysBefore,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AcademicCalendarEventsTableAnnotationComposer
+    extends Composer<_$AsterDatabase, $AcademicCalendarEventsTable> {
+  $$AcademicCalendarEventsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startDate =>
+      $composableBuilder(column: $table.startDate, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get endDate =>
+      $composableBuilder(column: $table.endDate, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get reminderDaysBefore => $composableBuilder(
+    column: $table.reminderDaysBefore,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$AcademicCalendarEventsTableTableManager
+    extends
+        RootTableManager<
+          _$AsterDatabase,
+          $AcademicCalendarEventsTable,
+          AcademicCalendarEvent,
+          $$AcademicCalendarEventsTableFilterComposer,
+          $$AcademicCalendarEventsTableOrderingComposer,
+          $$AcademicCalendarEventsTableAnnotationComposer,
+          $$AcademicCalendarEventsTableCreateCompanionBuilder,
+          $$AcademicCalendarEventsTableUpdateCompanionBuilder,
+          (
+            AcademicCalendarEvent,
+            BaseReferences<
+              _$AsterDatabase,
+              $AcademicCalendarEventsTable,
+              AcademicCalendarEvent
+            >,
+          ),
+          AcademicCalendarEvent,
+          PrefetchHooks Function()
+        > {
+  $$AcademicCalendarEventsTableTableManager(
+    _$AsterDatabase db,
+    $AcademicCalendarEventsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AcademicCalendarEventsTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$AcademicCalendarEventsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$AcademicCalendarEventsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String> category = const Value.absent(),
+                Value<DateTime> startDate = const Value.absent(),
+                Value<DateTime?> endDate = const Value.absent(),
+                Value<String?> description = const Value.absent(),
+                Value<int> reminderDaysBefore = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => AcademicCalendarEventsCompanion(
+                id: id,
+                title: title,
+                category: category,
+                startDate: startDate,
+                endDate: endDate,
+                description: description,
+                reminderDaysBefore: reminderDaysBefore,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String title,
+                required String category,
+                required DateTime startDate,
+                Value<DateTime?> endDate = const Value.absent(),
+                Value<String?> description = const Value.absent(),
+                Value<int> reminderDaysBefore = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+              }) => AcademicCalendarEventsCompanion.insert(
+                id: id,
+                title: title,
+                category: category,
+                startDate: startDate,
+                endDate: endDate,
+                description: description,
+                reminderDaysBefore: reminderDaysBefore,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AcademicCalendarEventsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AsterDatabase,
+      $AcademicCalendarEventsTable,
+      AcademicCalendarEvent,
+      $$AcademicCalendarEventsTableFilterComposer,
+      $$AcademicCalendarEventsTableOrderingComposer,
+      $$AcademicCalendarEventsTableAnnotationComposer,
+      $$AcademicCalendarEventsTableCreateCompanionBuilder,
+      $$AcademicCalendarEventsTableUpdateCompanionBuilder,
+      (
+        AcademicCalendarEvent,
+        BaseReferences<
+          _$AsterDatabase,
+          $AcademicCalendarEventsTable,
+          AcademicCalendarEvent
+        >,
+      ),
+      AcademicCalendarEvent,
+      PrefetchHooks Function()
+    >;
 
 class $AsterDatabaseManager {
   final _$AsterDatabase _db;
@@ -12195,4 +13053,9 @@ class $AsterDatabaseManager {
       $$WeeklyPlansTableTableManager(_db, _db.weeklyPlans);
   $$WeeklyPlanDaysTableTableManager get weeklyPlanDays =>
       $$WeeklyPlanDaysTableTableManager(_db, _db.weeklyPlanDays);
+  $$AcademicCalendarEventsTableTableManager get academicCalendarEvents =>
+      $$AcademicCalendarEventsTableTableManager(
+        _db,
+        _db.academicCalendarEvents,
+      );
 }

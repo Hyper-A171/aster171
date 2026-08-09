@@ -26,7 +26,7 @@ class _StudentSetupScreenState extends ConsumerState<StudentSetupScreen> {
   final _courseController = TextEditingController();
   String? _selectedSemester = 'Semester 5';
   DateTime? _startDate = DateTime(2026, 8, 10);
-  DateTime? _endDate;
+  DateTime? _endDate = DateTime(2026, 10, 17);
   bool _isSaving = false;
 
   @override

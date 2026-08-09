@@ -129,6 +129,39 @@ Return only JSON matching the supplied response schema.
       throw const GeminiException('The selected timetable file is empty');
     }
 
+    final firstPass = await _extractTimetable(bytes, mimeType, '''
+Extract the weekly college timetable from this document.
+Read timetable grids carefully, including rotated text and merged laboratory cells.
+Use period/bell-time headers to calculate start and end times. Expand subject abbreviations using any legend in the document.
+Return only actual lecture, laboratory, tutorial, project, or seminar periods.
+Ignore headings, lunch, recess, notes, and examination schedules.
+Use weekday 1 for Monday through 7 for Sunday.
+Convert printed local times to minutes after midnight. If a course code is not visible, use an empty string.
+If the document contains multiple classes, prefer Semester 5 Computer Engineering/Computer Science. Do not mix divisions.
+''');
+    if (firstPass.isNotEmpty) return firstPass;
+
+    final secondPass = await _extractTimetable(bytes, mimeType, '''
+Re-check this document as a visual timetable grid. The first extraction found no rows.
+Locate weekday labels (Mon-Sat), period-number columns, bell timings, and subject abbreviations even when text is small.
+If start/end times are in a separate header or bell schedule, join them to each subject cell.
+For a lab spanning multiple periods, return one entry from the first start time to the final end time.
+Extract Semester 5 Computer Engineering/Computer Science when several timetables are shown.
+Never return lunch/recess as a subject. Return every visible teaching period that has a determinable day and time.
+''');
+    if (secondPass.isEmpty) {
+      throw const GeminiException(
+        'No lecture periods could be detected. Use a clear timetable grid that includes weekdays and start/end times.',
+      );
+    }
+    return secondPass;
+  }
+
+  Future<List<TimetableImportEntry>> _extractTimetable(
+    Uint8List bytes,
+    String mimeType,
+    String prompt,
+  ) async {
     final uri = Uri.parse(
       'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent',
     );
@@ -143,17 +176,7 @@ Return only JSON matching the supplied response schema.
           {
             'role': 'user',
             'parts': [
-              {
-                'text': '''
-Extract the weekly college timetable from this document.
-Return only actual lecture, laboratory, tutorial, or seminar periods.
-Ignore headings, lunch breaks, recess, notes, and exam schedules.
-Use weekday 1 for Monday through 7 for Sunday.
-Convert times to minutes after midnight using the local time printed in the timetable.
-Preserve course codes when visible. If a code is missing, return an empty string.
-Every end time must be later than its start time.
-''',
-              },
+              {'text': prompt},
               {
                 'inlineData': {
                   'mimeType': mimeType,
@@ -205,9 +228,6 @@ Every end time must be later than its start time.
               final day = a.weekday.compareTo(b.weekday);
               return day != 0 ? day : a.startMinutes.compareTo(b.startMinutes);
             });
-      if (entries.isEmpty) {
-        throw const GeminiException('No lecture periods were found');
-      }
       return entries;
     } on GeminiException {
       rethrow;

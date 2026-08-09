@@ -20,6 +20,8 @@ class NotificationService {
   static const _lastSummaryReminderId = 5599;
   static const _firstNextPeriodReminderId = 5600;
   static const _lastNextPeriodReminderId = 5999;
+  static const _firstAcademicReminderId = 6000;
+  static const _lastAcademicReminderId = 6099;
   static const _channelId = 'aster_reminders';
 
   final FlutterLocalNotificationsPlugin _plugin =
@@ -90,9 +92,18 @@ class NotificationService {
         .where(
           (notification) =>
               notification.id >= _firstReminderId &&
-              notification.id <= _lastNextPeriodReminderId,
+              notification.id <= _lastAcademicReminderId,
         )
         .length;
+  }
+
+  Future<void> _cancelPendingRange(int firstId, int lastId) async {
+    final pending = await _plugin.pendingNotificationRequests();
+    for (final notification in pending) {
+      if (notification.id >= firstId && notification.id <= lastId) {
+        await _plugin.cancel(id: notification.id);
+      }
+    }
   }
 
   Future<bool> enableAndSync(AsterDatabase db) async {
@@ -142,6 +153,107 @@ class NotificationService {
     }
 
     await syncTimetableReminders(db, endDate: profile.semesterEndDate);
+    await syncAcademicCalendarReminders(db);
+  }
+
+  Future<void> syncAcademicCalendarReminders(AsterDatabase db) async {
+    await initialize();
+    await _cancelPendingRange(
+      _firstAcademicReminderId,
+      _lastAcademicReminderId,
+    );
+
+    final fallbackEvents = <({DateTime date, String title, String body})>[
+      (
+        date: DateTime(2026, 8, 10),
+        title: 'Semester 5 college begins tomorrow',
+        body: 'Your college-specific Semester 5 schedule starts on 10 August.',
+      ),
+      (
+        date: DateTime(2026, 8, 20),
+        title: 'Exam form window opens tomorrow',
+        body: 'Normal-fee candidate form filling runs from 20–30 August.',
+      ),
+      (
+        date: DateTime(2026, 8, 30),
+        title: 'Exam form deadline tomorrow',
+        body: '30 August is the final normal-fee candidate form date.',
+      ),
+      (
+        date: DateTime(2026, 9, 1),
+        title: 'Late-fee form window opens tomorrow',
+        body: 'Late-fee candidate form filling runs from 1–3 September.',
+      ),
+      (
+        date: DateTime(2026, 9, 5),
+        title: 'Penalty form window opens tomorrow',
+        body: 'Penalty-fee candidate form filling runs from 5–6 September.',
+      ),
+      (
+        date: DateTime(2026, 9, 21),
+        title: 'First class test starts tomorrow',
+        body: 'The MSBTE first class-test window is 21–22 September.',
+      ),
+      (
+        date: DateTime(2026, 10, 12),
+        title: 'Second class test starts tomorrow',
+        body: 'The MSBTE second class-test window is 12–14 October.',
+      ),
+      (
+        date: DateTime(2026, 10, 17),
+        title: 'Semester 5 term ends tomorrow',
+        body:
+            'The MSBTE 2026–27 odd-semester academic term ends on 17 October.',
+      ),
+    ];
+
+    final storedEvents = await db.select(db.academicCalendarEvents).get()
+      ..sort((a, b) => a.startDate.compareTo(b.startDate));
+    final events = storedEvents.isEmpty
+        ? fallbackEvents
+        : storedEvents
+              .map(
+                (event) => (
+                  date: event.startDate,
+                  title: 'Tomorrow: ${event.title}',
+                  body:
+                      event.description ??
+                      'Open Aster to review this academic event.',
+                ),
+              )
+              .toList();
+
+    final now = tz.TZDateTime.now(tz.local);
+    var id = _firstAcademicReminderId;
+    for (final event in events) {
+      final reminderDay = event.date.subtract(const Duration(days: 1));
+      final scheduled = tz.TZDateTime(
+        tz.local,
+        reminderDay.year,
+        reminderDay.month,
+        reminderDay.day,
+        18,
+      );
+      if (!scheduled.isAfter(now) || id > _lastAcademicReminderId) continue;
+      await _plugin.zonedSchedule(
+        id: id++,
+        title: event.title,
+        body: event.body,
+        scheduledDate: scheduled,
+        notificationDetails: const NotificationDetails(
+          android: AndroidNotificationDetails(
+            _channelId,
+            'Aster reminders',
+            channelDescription: 'Attendance and academic calendar reminders',
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(),
+        ),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        payload: 'academic_calendar',
+      );
+    }
   }
 
   Future<void> syncInternshipReminders({
@@ -152,9 +264,7 @@ class NotificationService {
     Set<String> excludedDates = const {},
   }) async {
     await initialize();
-    for (var id = _firstReminderId; id <= _lastReminderId; id++) {
-      await _plugin.cancel(id: id);
-    }
+    await _cancelPendingRange(_firstReminderId, _lastReminderId);
 
     final now = tz.TZDateTime.now(tz.local);
     var date = DateTime(startDate.year, startDate.month, startDate.day);
@@ -205,13 +315,10 @@ class NotificationService {
     DateTime? endDate,
   }) async {
     await initialize();
-    for (
-      var id = _firstTimetableReminderId;
-      id <= _lastNextPeriodReminderId;
-      id++
-    ) {
-      await _plugin.cancel(id: id);
-    }
+    await _cancelPendingRange(
+      _firstTimetableReminderId,
+      _lastNextPeriodReminderId,
+    );
 
     final entries = await db.select(db.timetableEntries).get();
     if (entries.isEmpty) return;
